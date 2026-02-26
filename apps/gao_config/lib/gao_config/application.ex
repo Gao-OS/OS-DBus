@@ -1,19 +1,16 @@
 defmodule GaoConfig.Application do
-  # See https://hexdocs.pm/elixir/Application.html
-  # for more information on OTP Applications
   @moduledoc false
 
   use Application
 
   @impl true
   def start(_type, _args) do
+    store_path = Application.get_env(:gao_config, :store_path, "/tmp/gao_config.dat")
+
     children = [
-      # Starts a worker by calling: GaoConfig.Worker.start_link(arg)
-      # {GaoConfig.Worker, arg}
+      {GaoConfig.ConfigStore, path: store_path}
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: GaoConfig.Supervisor]
     Supervisor.start_link(children, opts)
   end
