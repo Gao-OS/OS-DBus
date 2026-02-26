@@ -121,6 +121,7 @@ defmodule GaoBus.Peer do
     else
       n = next_peer_id()
       name = ":1.#{n}"
+      GaoBus.PubSub.broadcast({:peer_connected, name, self()})
       {:reply, name, %{state | unique_name: name}}
     end
   end
@@ -221,6 +222,7 @@ defmodule GaoBus.Peer do
 
   defp cleanup(state) do
     if state.unique_name do
+      GaoBus.PubSub.broadcast({:peer_disconnected, state.unique_name, self()})
       GaoBus.NameRegistry.peer_disconnected(self())
       GaoBus.Router.unregister_peer(self())
     end

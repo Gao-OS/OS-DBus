@@ -55,6 +55,7 @@ defmodule GaoBus.Router do
 
   @impl true
   def handle_cast({:route, message, from_peer_pid}, state) do
+    GaoBus.PubSub.broadcast({:message_routed, message})
     state = do_route(message, from_peer_pid, state)
     {:noreply, state}
   end

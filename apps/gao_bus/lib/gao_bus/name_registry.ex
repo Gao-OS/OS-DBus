@@ -291,6 +291,16 @@ defmodule GaoBus.NameRegistry do
   end
 
   defp emit_name_owner_changed(name, old_owner, new_owner) do
+    # Broadcast to PubSub for web monitor
+    cond do
+      new_owner != "" and old_owner == "" ->
+        GaoBus.PubSub.broadcast({:name_acquired, name, new_owner})
+      new_owner == "" and old_owner != "" ->
+        GaoBus.PubSub.broadcast({:name_released, name, old_owner})
+      true ->
+        GaoBus.PubSub.broadcast({:name_acquired, name, new_owner})
+    end
+
     # Send through the router if available
     if Process.whereis(GaoBus.Router) do
       GaoBus.Router.emit_signal(

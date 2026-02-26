@@ -17,7 +17,10 @@ defmodule GaoBusWebWeb.Router do
   scope "/", GaoBusWebWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", DashboardLive, :index
+    live "/messages", MessagesLive, :index
+    live "/introspect", IntrospectLive, :index
+    live "/call", CallLive, :index
   end
 
   # Other scopes may use custom stacks.
