@@ -56,8 +56,32 @@ defmodule GaoBus.Router do
   @impl true
   def handle_cast({:route, message, from_peer_pid}, state) do
     GaoBus.PubSub.broadcast({:message_routed, message})
-    state = do_route(message, from_peer_pid, state)
-    {:noreply, state}
+
+    case check_policy(message, from_peer_pid) do
+      :allow ->
+        state = do_route(message, from_peer_pid, state)
+        {:noreply, state}
+
+      {:deny, error_name} ->
+        # Send access denied error back to caller
+        if message.type == :method_call do
+          {serial, state} = next_serial(state)
+
+          error =
+            Message.error(error_name, message.serial,
+              serial: serial,
+              destination: message.sender,
+              sender: "org.freedesktop.DBus",
+              signature: "s",
+              body: ["Rejected send message"]
+            )
+
+          send(from_peer_pid, {:send_message, error})
+          {:noreply, state}
+        else
+          {:noreply, state}
+        end
+    end
   end
 
   def handle_cast({:emit_signal, path, interface, member, signature, body}, state) do
@@ -181,6 +205,30 @@ defmodule GaoBus.Router do
       :ets.match(:gao_bus_match_rules, {pid, :_, :_, :_}) != []
     catch
       :error, :badarg -> false
+    end
+  end
+
+  defp check_policy(message, from_peer_pid) do
+    if Process.whereis(GaoBus.Policy.Capability) do
+      credentials =
+        try do
+          GaoBus.Peer.get_credentials(from_peer_pid) || %{}
+        catch
+          :exit, _ -> %{}
+        end
+
+      message_info = %{
+        type: message.type,
+        sender: message.sender,
+        destination: message.destination,
+        interface: message.interface,
+        member: message.member,
+        path: message.path
+      }
+
+      GaoBus.Policy.Capability.check_send(credentials, message_info)
+    else
+      :allow
     end
   end
 

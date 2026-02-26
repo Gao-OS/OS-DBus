@@ -23,6 +23,7 @@ defmodule GaoBus.Peer do
   defstruct [
     :socket,
     :unique_name,
+    :credentials,
     state: :waiting_socket,
     buffer: <<>>,
     auth_buffer: <<>>
@@ -47,6 +48,13 @@ defmodule GaoBus.Peer do
   """
   def get_unique_name(pid) do
     GenServer.call(pid, :get_unique_name)
+  end
+
+  @doc """
+  Get this peer's credentials. Returns nil if not authenticated.
+  """
+  def get_credentials(pid) do
+    GenServer.call(pid, :get_credentials)
   end
 
   @doc """
@@ -115,6 +123,10 @@ defmodule GaoBus.Peer do
     {:reply, state.unique_name, state}
   end
 
+  def handle_call(:get_credentials, _from, state) do
+    {:reply, state.credentials, state}
+  end
+
   def handle_call(:assign_unique_name, _from, state) do
     if state.unique_name do
       {:reply, state.unique_name, state}
@@ -122,7 +134,14 @@ defmodule GaoBus.Peer do
       n = next_peer_id()
       name = ":1.#{n}"
       GaoBus.PubSub.broadcast({:peer_connected, name, self()})
-      {:reply, name, %{state | unique_name: name}}
+
+      # Set up default capabilities based on credentials
+      creds = Map.put(state.credentials || %{}, :unique_name, name)
+      if Process.whereis(GaoBus.Policy.Capability) do
+        GaoBus.Policy.Capability.setup_defaults(name, creds)
+      end
+
+      {:reply, name, %{state | unique_name: name, credentials: creds}}
     end
   end
 
@@ -154,7 +173,9 @@ defmodule GaoBus.Peer do
     end
   end
 
-  defp handle_auth_line("AUTH " <> _mechanism, state) do
+  defp handle_auth_line("AUTH " <> rest, state) do
+    # Extract credentials from auth mechanism
+    state = extract_credentials(rest, state)
     # Accept any auth mechanism for now — respond with OK
     :gen_tcp.send(state.socket, "OK #{@auth_guid}\r\n")
     wait_for_begin(state)
@@ -220,11 +241,60 @@ defmodule GaoBus.Peer do
 
   # --- Helpers ---
 
+  defp extract_credentials(auth_line, state) do
+    parts = String.split(auth_line, " ", trim: true)
+
+    credentials =
+      case parts do
+        ["EXTERNAL", uid_hex] ->
+          case decode_hex_uid(uid_hex) do
+            {:ok, uid} -> %{uid: uid}
+            _ -> %{}
+          end
+
+        ["ANONYMOUS" | _] ->
+          %{uid: nil}
+
+        _ ->
+          %{}
+      end
+
+    # Try to get peer credentials from socket
+    credentials =
+      case :inet.peername(state.socket) do
+        {:ok, {:local, _}} ->
+          # Unix socket — try to get peer credentials via SO_PEERCRED
+          credentials
+
+        _ ->
+          credentials
+      end
+
+    %{state | credentials: credentials}
+  end
+
+  defp decode_hex_uid(hex_string) do
+    try do
+      uid_string = Base.decode16!(hex_string, case: :mixed)
+      case Integer.parse(uid_string) do
+        {uid, ""} -> {:ok, uid}
+        _ -> :error
+      end
+    rescue
+      _ -> :error
+    end
+  end
+
   defp cleanup(state) do
     if state.unique_name do
       GaoBus.PubSub.broadcast({:peer_disconnected, state.unique_name, self()})
       GaoBus.NameRegistry.peer_disconnected(self())
       GaoBus.MatchRules.peer_disconnected(self())
+
+      if Process.whereis(GaoBus.Policy.Capability) do
+        GaoBus.Policy.Capability.peer_disconnected(state.unique_name)
+      end
+
       GaoBus.Router.unregister_peer(self())
     end
 

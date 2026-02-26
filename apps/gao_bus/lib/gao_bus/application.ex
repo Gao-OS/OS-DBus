@@ -11,6 +11,7 @@ defmodule GaoBus.Application do
       {Registry, keys: :unique, name: GaoBus.PeerRegistry},
       GaoBus.NameRegistry,
       GaoBus.MatchRules,
+      GaoBus.Policy.Capability,
       GaoBus.Router,
       {GaoBus.PeerSupervisor, []},
       {GaoBus.Listener, socket_path: socket_path}
