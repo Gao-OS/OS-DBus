@@ -165,8 +165,22 @@ defmodule GaoBus.Router do
   end
 
   defp broadcast_signal(signal, state) do
+    # Get peers that have matching match rules
+    matching_pids = GaoBus.MatchRules.matching_peers(signal) |> MapSet.new()
+
     for {pid, _name} <- state.peers do
-      send(pid, {:send_message, signal})
+      # Send to peers that either have a matching rule or have no rules (backward compat)
+      if MapSet.member?(matching_pids, pid) or not has_match_rules?(pid) do
+        send(pid, {:send_message, signal})
+      end
+    end
+  end
+
+  defp has_match_rules?(pid) do
+    try do
+      :ets.match(:gao_bus_match_rules, {pid, :_, :_, :_}) != []
+    catch
+      :error, :badarg -> false
     end
   end
 

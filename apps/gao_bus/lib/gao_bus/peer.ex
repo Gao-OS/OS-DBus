@@ -224,6 +224,7 @@ defmodule GaoBus.Peer do
     if state.unique_name do
       GaoBus.PubSub.broadcast({:peer_disconnected, state.unique_name, self()})
       GaoBus.NameRegistry.peer_disconnected(self())
+      GaoBus.MatchRules.peer_disconnected(self())
       GaoBus.Router.unregister_peer(self())
     end
 

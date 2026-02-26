@@ -10,6 +10,7 @@ defmodule GaoBus.Application do
     children = [
       {Registry, keys: :unique, name: GaoBus.PeerRegistry},
       GaoBus.NameRegistry,
+      GaoBus.MatchRules,
       GaoBus.Router,
       {GaoBus.PeerSupervisor, []},
       {GaoBus.Listener, socket_path: socket_path}

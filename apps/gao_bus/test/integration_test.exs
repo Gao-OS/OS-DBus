@@ -211,6 +211,74 @@ defmodule GaoBus.IntegrationTest do
     end
   end
 
+  describe "org.freedesktop.DBus.AddMatch / RemoveMatch" do
+    test "AddMatch and RemoveMatch succeed", %{socket_path: path} do
+      conn = connect_client(path)
+      _name = call_hello(conn)
+
+      # AddMatch
+      add = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "AddMatch",
+        destination: "org.freedesktop.DBus",
+        signature: "s",
+        body: ["type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged'"])
+      {:ok, reply} = Connection.call(conn, add, 5_000)
+      assert reply.type == :method_return
+
+      # RemoveMatch
+      rem_msg = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "RemoveMatch",
+        destination: "org.freedesktop.DBus",
+        signature: "s",
+        body: ["type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged'"])
+      {:ok, reply} = Connection.call(conn, rem_msg, 5_000)
+      assert reply.type == :method_return
+
+      Connection.disconnect(conn)
+    end
+  end
+
+  describe "org.freedesktop.DBus.Introspectable.Introspect" do
+    test "returns valid XML", %{socket_path: path} do
+      conn = connect_client(path)
+      _name = call_hello(conn)
+
+      msg = Message.method_call("/org/freedesktop/DBus",
+        "org.freedesktop.DBus.Introspectable", "Introspect",
+        destination: "org.freedesktop.DBus")
+      {:ok, reply} = Connection.call(conn, msg, 5_000)
+      assert reply.type == :method_return
+      [xml] = reply.body
+
+      assert String.contains?(xml, "org.freedesktop.DBus")
+      assert String.contains?(xml, "org.freedesktop.DBus.Introspectable")
+      assert String.contains?(xml, "<method name=\"Hello\">")
+      assert String.contains?(xml, "<method name=\"AddMatch\">")
+      assert String.contains?(xml, "<signal name=\"NameOwnerChanged\">")
+
+      # Parse it back
+      assert {:ok, _path, interfaces, _children} = ExDBus.Introspection.from_xml(xml)
+      iface_names = Enum.map(interfaces, & &1.name)
+      assert "org.freedesktop.DBus" in iface_names
+      assert "org.freedesktop.DBus.Introspectable" in iface_names
+
+      Connection.disconnect(conn)
+    end
+  end
+
+  describe "org.freedesktop.DBus.ListActivatableNames" do
+    test "returns empty list", %{socket_path: path} do
+      conn = connect_client(path)
+      _name = call_hello(conn)
+
+      msg = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus",
+        "ListActivatableNames", destination: "org.freedesktop.DBus")
+      {:ok, reply} = Connection.call(conn, msg, 5_000)
+      assert reply.type == :method_return
+      assert reply.body == [[]]
+
+      Connection.disconnect(conn)
+    end
+  end
+
   # Drain signals from the mailbox until we get a method_call
   defp receive_method_call(timeout) do
     deadline = System.monotonic_time(:millisecond) + timeout

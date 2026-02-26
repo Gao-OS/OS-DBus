@@ -274,25 +274,29 @@ defmodule ExDBus.Message do
               sig = extract_field_value(fields_list, @field_signature)
 
               # Decode body
-              {body, rest5} = decode_body(body_rest, sig, body_length, endianness, body_offset)
+              case decode_body(body_rest, sig, body_length, endianness, body_offset) do
+                :insufficient_data ->
+                  {:error, :insufficient_data}
 
-              msg = %__MODULE__{
-                type: msg_type,
-                serial: serial,
-                flags: flags,
-                path: extract_field_value(fields_list, @field_path),
-                interface: extract_field_value(fields_list, @field_interface),
-                member: extract_field_value(fields_list, @field_member),
-                error_name: extract_field_value(fields_list, @field_error_name),
-                reply_serial: extract_field_value(fields_list, @field_reply_serial),
-                destination: extract_field_value(fields_list, @field_destination),
-                sender: extract_field_value(fields_list, @field_sender),
-                signature: sig,
-                unix_fds: extract_field_value(fields_list, @field_unix_fds),
-                body: body
-              }
+                {body, rest5} ->
+                  msg = %__MODULE__{
+                    type: msg_type,
+                    serial: serial,
+                    flags: flags,
+                    path: extract_field_value(fields_list, @field_path),
+                    interface: extract_field_value(fields_list, @field_interface),
+                    member: extract_field_value(fields_list, @field_member),
+                    error_name: extract_field_value(fields_list, @field_error_name),
+                    reply_serial: extract_field_value(fields_list, @field_reply_serial),
+                    destination: extract_field_value(fields_list, @field_destination),
+                    sender: extract_field_value(fields_list, @field_sender),
+                    signature: sig,
+                    unix_fds: extract_field_value(fields_list, @field_unix_fds),
+                    body: body
+                  }
 
-              {:ok, msg, rest5}
+                  {:ok, msg, rest5}
+              end
 
             _ ->
               {:error, :insufficient_data_for_body_padding}
@@ -309,14 +313,18 @@ defmodule ExDBus.Message do
   defp decode_body(binary, "", _body_length, _endianness, _offset), do: {[], binary}
 
   defp decode_body(binary, signature, body_length, endianness, _offset) do
-    <<body_data::binary-size(body_length), rest::binary>> = binary
-    {:ok, types} = Types.parse_types(signature)
+    if byte_size(binary) < body_length do
+      :insufficient_data
+    else
+      <<body_data::binary-size(body_length), rest::binary>> = binary
+      {:ok, types} = Types.parse_types(signature)
 
-    # Body alignment is relative to the body start (offset 0)
-    case decode_body_values(body_data, types, endianness, 0) do
-      {:ok, values, _rest, _offset} -> {values, rest}
-      {:error, _reason} ->
-        {[], rest}
+      # Body alignment is relative to the body start (offset 0)
+      case decode_body_values(body_data, types, endianness, 0) do
+        {:ok, values, _rest, _offset} -> {values, rest}
+        {:error, _reason} ->
+          {[], rest}
+      end
     end
   end
 

@@ -8,8 +8,12 @@ defmodule GaoBus.BusInterface do
   - ReleaseName(name) → release
   - GetNameOwner(name) → lookup
   - ListNames() → all registered names
+  - ListActivatableNames() → activatable names (empty for now)
   - NameHasOwner(name) → boolean check
+  - AddMatch(rule) → subscribe to signals
+  - RemoveMatch(rule) → unsubscribe
   - GetId() → bus instance ID
+  - Introspect() → introspection XML (on org.freedesktop.DBus.Introspectable)
   """
 
   alias ExDBus.Message
@@ -22,14 +26,26 @@ defmodule GaoBus.BusInterface do
   Returns `{reply_message | nil, updated_router_state}`.
   """
   def handle_message(%Message{type: :method_call} = msg, from_peer_pid, state) do
-    case msg.member do
-      "Hello" -> handle_hello(msg, from_peer_pid, state)
-      "RequestName" -> handle_request_name(msg, from_peer_pid, state)
-      "ReleaseName" -> handle_release_name(msg, from_peer_pid, state)
-      "GetNameOwner" -> handle_get_name_owner(msg, from_peer_pid, state)
-      "ListNames" -> handle_list_names(msg, from_peer_pid, state)
-      "NameHasOwner" -> handle_name_has_owner(msg, from_peer_pid, state)
-      "GetId" -> handle_get_id(msg, from_peer_pid, state)
+    case {msg.interface, msg.member} do
+      {"org.freedesktop.DBus.Introspectable", "Introspect"} ->
+        handle_introspect(msg, from_peer_pid, state)
+
+      {"org.freedesktop.DBus.Properties", "Get"} ->
+        handle_properties_get(msg, from_peer_pid, state)
+
+      {"org.freedesktop.DBus.Properties", "GetAll"} ->
+        handle_properties_get_all(msg, from_peer_pid, state)
+
+      {_, "Hello"} -> handle_hello(msg, from_peer_pid, state)
+      {_, "RequestName"} -> handle_request_name(msg, from_peer_pid, state)
+      {_, "ReleaseName"} -> handle_release_name(msg, from_peer_pid, state)
+      {_, "GetNameOwner"} -> handle_get_name_owner(msg, from_peer_pid, state)
+      {_, "ListNames"} -> handle_list_names(msg, from_peer_pid, state)
+      {_, "ListActivatableNames"} -> handle_list_activatable_names(msg, from_peer_pid, state)
+      {_, "NameHasOwner"} -> handle_name_has_owner(msg, from_peer_pid, state)
+      {_, "AddMatch"} -> handle_add_match(msg, from_peer_pid, state)
+      {_, "RemoveMatch"} -> handle_remove_match(msg, from_peer_pid, state)
+      {_, "GetId"} -> handle_get_id(msg, from_peer_pid, state)
       _ -> {make_error(msg, "org.freedesktop.DBus.Error.UnknownMethod",
               "Unknown method: #{msg.member}", state), state}
     end
@@ -111,6 +127,86 @@ defmodule GaoBus.BusInterface do
   defp handle_get_id(msg, _from_peer_pid, state) do
     id = Application.get_env(:gao_bus, :bus_id, "gaobusid000000000000000000000000")
     {reply, state} = make_reply(msg, "s", [id], state)
+    {reply, state}
+  end
+
+  defp handle_list_activatable_names(msg, _from_peer_pid, state) do
+    # No activation support yet — return empty list
+    {reply, state} = make_reply(msg, "as", [[]], state)
+    {reply, state}
+  end
+
+  defp handle_add_match(msg, from_peer_pid, state) do
+    [rule_string] = msg.body
+
+    case GaoBus.MatchRules.add_match(from_peer_pid, rule_string) do
+      :ok ->
+        {reply, state} = make_reply(msg, nil, [], state)
+        {reply, state}
+
+      {:error, reason} ->
+        {make_error(msg, "org.freedesktop.DBus.Error.MatchRuleInvalid",
+          "Invalid match rule: #{inspect(reason)}", state), state}
+    end
+  end
+
+  defp handle_remove_match(msg, from_peer_pid, state) do
+    [rule_string] = msg.body
+
+    case GaoBus.MatchRules.remove_match(from_peer_pid, rule_string) do
+      :ok ->
+        {reply, state} = make_reply(msg, nil, [], state)
+        {reply, state}
+
+      {:error, error_name} ->
+        {make_error(msg, error_name,
+          "Match rule not found", state), state}
+    end
+  end
+
+  defp handle_introspect(msg, _from_peer_pid, state) do
+    xml = ExDBus.Introspection.to_xml(
+      "/org/freedesktop/DBus",
+      [
+        ExDBus.Introspection.bus_interface(),
+        ExDBus.Introspection.introspectable_interface(),
+        ExDBus.Introspection.properties_interface(),
+        ExDBus.Introspection.peer_interface()
+      ]
+    )
+
+    {reply, state} = make_reply(msg, "s", [xml], state)
+    {reply, state}
+  end
+
+  defp handle_properties_get(msg, _from_peer_pid, state) do
+    [_interface_name, property_name] = msg.body
+
+    case property_name do
+      "Features" ->
+        {reply, state} = make_reply(msg, "v", [{"as", []}], state)
+        {reply, state}
+
+      "Interfaces" ->
+        interfaces = ["org.freedesktop.DBus", "org.freedesktop.DBus.Introspectable",
+                       "org.freedesktop.DBus.Properties", "org.freedesktop.DBus.Peer"]
+        {reply, state} = make_reply(msg, "v", [{"as", interfaces}], state)
+        {reply, state}
+
+      _ ->
+        {make_error(msg, "org.freedesktop.DBus.Error.UnknownProperty",
+          "Unknown property: #{property_name}", state), state}
+    end
+  end
+
+  defp handle_properties_get_all(msg, _from_peer_pid, state) do
+    props = [
+      {"Features", {"as", []}},
+      {"Interfaces", {"as", ["org.freedesktop.DBus", "org.freedesktop.DBus.Introspectable",
+                              "org.freedesktop.DBus.Properties", "org.freedesktop.DBus.Peer"]}}
+    ]
+
+    {reply, state} = make_reply(msg, "a{sv}", [props], state)
     {reply, state}
   end
 
