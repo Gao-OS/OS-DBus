@@ -1,0 +1,175 @@
+defmodule GaoBus.Router do
+  @moduledoc """
+  Routes D-Bus messages between peers.
+
+  - method_call → destination peer (or bus itself for org.freedesktop.DBus)
+  - method_return/error → back to caller by reply_serial
+  - signal → broadcast to all peers (match rules come later)
+  """
+
+  use GenServer
+
+  alias ExDBus.Message
+
+  require Logger
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @doc """
+  Route a message from a peer.
+  """
+  def route(message, from_peer_pid) do
+    GenServer.cast(__MODULE__, {:route, message, from_peer_pid})
+  end
+
+  @doc """
+  Emit a signal from the bus itself (e.g., NameOwnerChanged).
+  """
+  def emit_signal(path, interface, member, signature, body) do
+    GenServer.cast(__MODULE__, {:emit_signal, path, interface, member, signature, body})
+  end
+
+  @doc """
+  Register a peer for signal broadcasting.
+  """
+  def register_peer(peer_pid, unique_name) do
+    GenServer.cast(__MODULE__, {:register_peer, peer_pid, unique_name})
+  end
+
+  @doc """
+  Unregister a peer.
+  """
+  def unregister_peer(peer_pid) do
+    GenServer.cast(__MODULE__, {:unregister_peer, peer_pid})
+  end
+
+  # --- GenServer callbacks ---
+
+  @impl true
+  def init(_opts) do
+    # peers: %{pid => unique_name}
+    {:ok, %{peers: %{}, next_serial: 1}}
+  end
+
+  @impl true
+  def handle_cast({:route, message, from_peer_pid}, state) do
+    state = do_route(message, from_peer_pid, state)
+    {:noreply, state}
+  end
+
+  def handle_cast({:emit_signal, path, interface, member, signature, body}, state) do
+    {serial, state} = next_serial(state)
+
+    signal = %Message{
+      type: :signal,
+      serial: serial,
+      path: path,
+      interface: interface,
+      member: member,
+      sender: "org.freedesktop.DBus",
+      signature: signature,
+      body: body
+    }
+
+    broadcast_signal(signal, state)
+    {:noreply, state}
+  end
+
+  def handle_cast({:register_peer, peer_pid, unique_name}, state) do
+    Process.monitor(peer_pid)
+    {:noreply, put_in(state.peers[peer_pid], unique_name)}
+  end
+
+  def handle_cast({:unregister_peer, peer_pid}, state) do
+    {:noreply, %{state | peers: Map.delete(state.peers, peer_pid)}}
+  end
+
+  @impl true
+  def handle_info({:DOWN, _ref, :process, peer_pid, _reason}, state) do
+    {:noreply, %{state | peers: Map.delete(state.peers, peer_pid)}}
+  end
+
+  # --- Routing logic ---
+
+  defp do_route(%Message{destination: "org.freedesktop.DBus"} = msg, from_peer_pid, state) do
+    {reply, state} = GaoBus.BusInterface.handle_message(msg, from_peer_pid, state)
+
+    if reply do
+      send(from_peer_pid, {:send_message, reply})
+    end
+
+    state
+  end
+
+  defp do_route(%Message{type: :method_call, destination: dest} = msg, _from_peer_pid, state)
+       when is_binary(dest) do
+    case GaoBus.NameRegistry.resolve(dest) do
+      {:ok, target_pid} ->
+        send(target_pid, {:send_message, msg})
+
+      {:error, :name_not_found} ->
+        # Send error back to caller
+        {serial, state} = next_serial(state)
+
+        error =
+          Message.error(
+            "org.freedesktop.DBus.Error.ServiceUnknown",
+            msg.serial,
+            serial: serial,
+            destination: msg.sender,
+            signature: "s",
+            body: ["The name #{dest} was not provided by any .service files"]
+          )
+
+        case GaoBus.NameRegistry.resolve(msg.sender) do
+          {:ok, sender_pid} -> send(sender_pid, {:send_message, error})
+          _ -> :ok
+        end
+
+        state
+
+      {:bus, _} ->
+        # This shouldn't happen (already handled above), but just in case
+        state
+    end
+  end
+
+  defp do_route(%Message{type: :method_call, destination: nil} = msg, from_peer_pid, state) do
+    # No destination — treat as bus message
+    {reply, state} = GaoBus.BusInterface.handle_message(msg, from_peer_pid, state)
+    if reply, do: send(from_peer_pid, {:send_message, reply})
+    state
+  end
+
+  defp do_route(%Message{type: type, destination: dest} = msg, _from_peer_pid, state)
+       when type in [:method_return, :error] and is_binary(dest) do
+    case GaoBus.NameRegistry.resolve(dest) do
+      {:ok, target_pid} -> send(target_pid, {:send_message, msg})
+      _ -> Logger.debug("GaoBus.Router: cannot route #{type} to #{dest}")
+    end
+
+    state
+  end
+
+  defp do_route(%Message{type: :signal} = msg, _from_peer_pid, state) do
+    broadcast_signal(msg, state)
+    state
+  end
+
+  defp do_route(msg, _from_peer_pid, state) do
+    Logger.debug("GaoBus.Router: unhandled message: #{inspect(msg.type)}")
+    state
+  end
+
+  defp broadcast_signal(signal, state) do
+    for {pid, _name} <- state.peers do
+      send(pid, {:send_message, signal})
+    end
+  end
+
+  defp next_serial(state) do
+    {state.next_serial, %{state | next_serial: state.next_serial + 1}}
+  end
+end

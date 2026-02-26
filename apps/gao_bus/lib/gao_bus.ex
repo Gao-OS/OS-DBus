@@ -1,18 +1,8 @@
 defmodule GaoBus do
   @moduledoc """
-  Documentation for `GaoBus`.
+  BEAM-native D-Bus bus daemon.
+
+  Replaces `dbus-daemon` with a supervised Elixir application where every
+  D-Bus message is an Erlang message and every connected peer is a GenServer.
   """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> GaoBus.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
 end
