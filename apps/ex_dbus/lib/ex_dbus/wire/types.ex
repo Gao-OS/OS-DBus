@@ -238,13 +238,55 @@ defmodule ExDBus.Wire.Types do
   def valid?(:double, v), do: is_float(v) or (is_integer(v) and v >= -2_147_483_648 and v <= 2_147_483_647)
   def valid?(:string, v), do: is_binary(v) and String.valid?(v)
   def valid?(:object_path, v), do: is_binary(v) and valid_object_path?(v)
-  def valid?(:signature, v), do: is_binary(v) and (match?({:ok, _}, parse_signature(v)))
+  def valid?(:signature, v), do: is_binary(v) and valid_signature?(v)
   def valid?(:unix_fd, v), do: is_integer(v) and v >= 0
   def valid?({:array, _elem_type}, v), do: is_list(v)
   def valid?({:struct, _types}, v), do: is_tuple(v)
   def valid?({:dict_entry, _key_type, _val_type}, v), do: is_tuple(v) and tuple_size(v) == 2
   def valid?(:variant, v), do: is_tuple(v) and tuple_size(v) == 2
   def valid?(_, _), do: false
+
+  @doc """
+  Parse a D-Bus signature string containing one or more complete types.
+
+  Unlike `parse_signature/1` which expects exactly one type, this function
+  parses signatures used for method argument lists (e.g., "sis" = [string, int32, string]).
+
+  ## Examples
+
+      iex> ExDBus.Wire.Types.parse_types("sis")
+      {:ok, [:string, :int32, :string]}
+
+      iex> ExDBus.Wire.Types.parse_types("i")
+      {:ok, [:int32]}
+
+      iex> ExDBus.Wire.Types.parse_types("")
+      {:ok, []}
+
+      iex> ExDBus.Wire.Types.parse_types("a{sv}i")
+      {:ok, [{:array, {:dict_entry, :string, :variant}}, :int32]}
+  """
+  def parse_types(""), do: {:ok, []}
+
+  def parse_types(sig) when is_binary(sig) do
+    case parse_types_impl(sig, []) do
+      {:ok, types} -> {:ok, Enum.reverse(types)}
+      error -> error
+    end
+  end
+
+  defp parse_types_impl("", acc), do: {:ok, acc}
+
+  defp parse_types_impl(sig, acc) do
+    case parse_signature_impl(sig, 0) do
+      {:ok, type, rest} -> parse_types_impl(rest, [type | acc])
+      error -> error
+    end
+  end
+
+  defp valid_signature?(v) do
+    v == "" or match?({:ok, _}, parse_signature(v)) or match?({:ok, _}, parse_types(v))
+  end
 
   defp valid_object_path?(path) do
     String.match?(path, ~r/^\/([a-zA-Z0-9_]+\/)*[a-zA-Z0-9_]*$/)
