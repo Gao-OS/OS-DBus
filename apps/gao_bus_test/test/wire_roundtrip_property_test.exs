@@ -31,7 +31,7 @@ defmodule GaoBusTest.WireRoundtripPropertyTest do
   end
 
   defp gen_object_path do
-    member_of([
+    one_of([
       constant("/"),
       bind(list_of(string(:alphanumeric, min_length: 1, max_length: 10), min_length: 1, max_length: 5), fn segments ->
         constant("/" <> Enum.join(segments, "/"))
