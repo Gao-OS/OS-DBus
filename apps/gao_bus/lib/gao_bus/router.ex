@@ -135,25 +135,32 @@ defmodule GaoBus.Router do
         send(target_pid, {:send_message, msg})
 
       {:error, :name_not_found} ->
-        # Send error back to caller
-        {serial, state} = next_serial(state)
+        # Try cluster routing if enabled
+        case try_cluster_route(msg) do
+          {:ok, :forwarded} ->
+            :ok
 
-        error =
-          Message.error(
-            "org.freedesktop.DBus.Error.ServiceUnknown",
-            msg.serial,
-            serial: serial,
-            destination: msg.sender,
-            signature: "s",
-            body: ["The name #{dest} was not provided by any .service files"]
-          )
+          _ ->
+            # Send error back to caller
+            {serial, state} = next_serial(state)
 
-        case GaoBus.NameRegistry.resolve(msg.sender) do
-          {:ok, sender_pid} -> send(sender_pid, {:send_message, error})
-          _ -> :ok
+            error =
+              Message.error(
+                "org.freedesktop.DBus.Error.ServiceUnknown",
+                msg.serial,
+                serial: serial,
+                destination: msg.sender,
+                signature: "s",
+                body: ["The name #{dest} was not provided by any .service files"]
+              )
+
+            case GaoBus.NameRegistry.resolve(msg.sender) do
+              {:ok, sender_pid} -> send(sender_pid, {:send_message, error})
+              _ -> :ok
+            end
+
+            state
         end
-
-        state
 
       {:bus, _} ->
         # This shouldn't happen (already handled above), but just in case
@@ -229,6 +236,14 @@ defmodule GaoBus.Router do
       GaoBus.Policy.Capability.check_send(credentials, message_info)
     else
       :allow
+    end
+  end
+
+  defp try_cluster_route(msg) do
+    if Process.whereis(GaoBus.Cluster) do
+      GaoBus.Cluster.route_remote(msg)
+    else
+      {:error, :not_found}
     end
   end
 

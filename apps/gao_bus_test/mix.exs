@@ -29,7 +29,8 @@ defmodule GaoBusTest.MixProject do
       {:gao_bus, in_umbrella: true},
       {:gao_config, in_umbrella: true},
       {:gao_bus_web, in_umbrella: true},
-      {:stream_data, "~> 1.0"}
+      {:stream_data, "~> 1.0"},
+      {:benchee, "~> 1.0", optional: true}
     ]
   end
 end
