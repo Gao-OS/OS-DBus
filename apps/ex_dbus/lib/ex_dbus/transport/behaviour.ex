@@ -5,6 +5,12 @@ defmodule ExDBus.Transport.Behaviour do
   A transport provides the raw byte stream between client and server.
   Implementations handle the details of socket creation, connection,
   and I/O for different socket types (Unix, TCP, etc.).
+
+  ## Optional FD Passing
+
+  Transports over Unix domain sockets may support file descriptor passing
+  via SCM_RIGHTS. Implement the optional callbacks `supports_fd_passing?/1`
+  and `send_with_fds/3` to enable this.
   """
 
   @type transport :: term()
@@ -28,4 +34,15 @@ defmodule ExDBus.Transport.Behaviour do
 
   @doc "Return the underlying socket for use with :gen_tcp/:socket options."
   @callback socket(transport()) :: port() | :socket.socket()
+
+  # --- Optional FD passing callbacks ---
+
+  @doc "Whether the transport supports Unix FD passing via SCM_RIGHTS."
+  @callback supports_fd_passing?(transport()) :: boolean()
+
+  @doc "Send iodata with file descriptors via SCM_RIGHTS."
+  @callback send_with_fds(transport(), iodata(), fds :: [non_neg_integer()]) ::
+              :ok | {:error, term()}
+
+  @optional_callbacks [supports_fd_passing?: 1, send_with_fds: 3]
 end

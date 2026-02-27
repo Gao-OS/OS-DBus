@@ -62,6 +62,7 @@ defmodule ExDBus.Message do
     sender: nil,
     signature: nil,
     unix_fds: nil,
+    fds: [],
     body: []
   ]
 
@@ -79,6 +80,7 @@ defmodule ExDBus.Message do
           sender: String.t() | nil,
           signature: String.t() | nil,
           unix_fds: non_neg_integer() | nil,
+          fds: [non_neg_integer()],
           body: list()
         }
 
