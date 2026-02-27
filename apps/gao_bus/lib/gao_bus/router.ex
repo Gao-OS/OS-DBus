@@ -133,12 +133,13 @@ defmodule GaoBus.Router do
     case GaoBus.NameRegistry.resolve(dest) do
       {:ok, target_pid} ->
         send(target_pid, {:send_message, msg})
+        state
 
       {:error, :name_not_found} ->
         # Try cluster routing if enabled
         case try_cluster_route(msg) do
           {:ok, :forwarded} ->
-            :ok
+            state
 
           _ ->
             # Send error back to caller
