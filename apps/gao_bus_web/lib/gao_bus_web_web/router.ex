@@ -21,6 +21,7 @@ defmodule GaoBusWebWeb.Router do
     live "/messages", MessagesLive, :index
     live "/introspect", IntrospectLive, :index
     live "/call", CallLive, :index
+    live "/capabilities", CapabilitiesLive, :index
   end
 
   # Other scopes may use custom stacks.
