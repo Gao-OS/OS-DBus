@@ -111,6 +111,7 @@ defmodule ExDBus.Message do
       flags: Keyword.get(opts, :flags, 0),
       reply_serial: reply_serial,
       destination: Keyword.get(opts, :destination),
+      sender: Keyword.get(opts, :sender),
       signature: Keyword.get(opts, :signature),
       body: Keyword.get(opts, :body, [])
     }
@@ -127,6 +128,7 @@ defmodule ExDBus.Message do
       error_name: error_name,
       reply_serial: reply_serial,
       destination: Keyword.get(opts, :destination),
+      sender: Keyword.get(opts, :sender),
       signature: Keyword.get(opts, :signature),
       body: Keyword.get(opts, :body, [])
     }

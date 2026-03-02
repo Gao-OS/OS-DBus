@@ -144,9 +144,10 @@ defmodule GaoBus.NameRegistry do
               @name_exists
 
             true ->
-              # Add to queue
+              # Add to queue and track in pid_names for disconnect cleanup
               new_queue = queue ++ [{peer_pid, unique_name, flags}]
               :ets.insert(state.names, {name, current_pid, current_unique, current_flags, new_queue})
+              :ets.insert(state.pid_names, {peer_pid, name})
               @name_in_queue
           end
       end
