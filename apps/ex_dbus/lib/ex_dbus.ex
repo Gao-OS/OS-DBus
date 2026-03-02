@@ -24,7 +24,7 @@ defmodule ExDBus do
   ## Transport & Auth
 
   - `ExDBus.Transport.UnixSocket` — AF_UNIX SOCK_STREAM transport
-  - `ExDBus.Transport.Tcp` — TCP transport for remote debugging
+  - `ExDBus.Transport.TCP` — TCP transport for remote debugging
   - `ExDBus.Auth.External` — EXTERNAL auth (uid-based)
   - `ExDBus.Auth.Anonymous` — ANONYMOUS auth (for testing)
 

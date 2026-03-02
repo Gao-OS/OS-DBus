@@ -1,11 +1,23 @@
-# ExDbus
+# ExDBus
 
-**TODO: Add description**
+Pure Elixir D-Bus wire protocol implementation with no C dependencies or NIFs.
+
+ExDBus handles encoding/decoding of all D-Bus types, message framing,
+authentication, and transport — suitable for both client and server use cases.
+
+## Features
+
+- Complete D-Bus wire protocol (all 13 types, both endianness)
+- Binary pattern matching for decode, iolist for encode (zero-copy)
+- EXTERNAL and ANONYMOUS authentication mechanisms
+- Unix socket and TCP transports
+- Client proxy and server object behaviours
+- Introspection XML generation and parsing
+- Hot-upgradable — no NIF segfaults, no C toolchain required
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `ex_dbus` to your list of dependencies in `mix.exs`:
+Add `ex_dbus` to your dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -15,7 +27,46 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/ex_dbus>.
+## Quick Start
 
+```elixir
+# Connect to the system bus
+{:ok, conn} = ExDBus.Connection.start_link(
+  address: "unix:path=/var/run/dbus/system_bus_socket",
+  auth_mod: ExDBus.Auth.External,
+  owner: self()
+)
+
+# Wait for connection
+receive do
+  {:ex_dbus, {:connected, _guid}} -> :ok
+end
+
+# Call a method
+msg = ExDBus.Message.method_call(
+  "/org/freedesktop/DBus",
+  "org.freedesktop.DBus",
+  "ListNames",
+  destination: "org.freedesktop.DBus"
+)
+
+{:ok, reply} = ExDBus.Connection.call(conn, msg, 5_000)
+[names] = reply.body
+```
+
+## Modules
+
+| Module | Description |
+|---|---|
+| `ExDBus.Connection` | GenServer managing a single bus connection lifecycle |
+| `ExDBus.Message` | Message struct with encode/decode for all 4 message types |
+| `ExDBus.Proxy` | Client-side proxy for calling remote D-Bus objects |
+| `ExDBus.Object` | Server-side behaviour for exporting Elixir modules as D-Bus objects |
+| `ExDBus.Introspection` | XML introspection generation and parsing |
+| `ExDBus.Wire.Encoder` | Elixir terms to D-Bus binary |
+| `ExDBus.Wire.Decoder` | D-Bus binary to Elixir terms |
+| `ExDBus.Wire.Types` | Type signature parsing, validation, alignment |
+
+## License
+
+Apache-2.0 — see [LICENSE](../../LICENSE).

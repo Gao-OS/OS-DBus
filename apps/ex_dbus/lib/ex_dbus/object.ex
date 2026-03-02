@@ -198,7 +198,7 @@ defmodule ExDBus.Object do
         machine_id =
           case File.read("/etc/machine-id") do
             {:ok, id} -> String.trim(id)
-            _ -> "0000000000000000"
+            _ -> "00000000000000000000000000000000"
           end
 
         {:ok,

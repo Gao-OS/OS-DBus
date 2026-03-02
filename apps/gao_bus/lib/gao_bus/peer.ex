@@ -21,7 +21,7 @@ defmodule GaoBus.Peer do
 
   require Logger
 
-  @auth_guid Application.compile_env(:gao_bus, :auth_guid, "gaobusauthguid00000000000000000")
+  @auth_guid Application.compile_env(:gao_bus, :auth_guid, nil)
 
   # Control buffer size for recvmsg — enough for a few FDs
   # Each FD is 4 bytes, plus cmsg header (~16 bytes)
@@ -219,7 +219,7 @@ defmodule GaoBus.Peer do
     # Extract credentials from auth mechanism
     state = extract_credentials(rest, state)
     # Accept any auth mechanism for now — respond with OK
-    do_send(state.socket, "OK #{@auth_guid}\r\n")
+    do_send(state.socket, "OK #{auth_guid()}\r\n")
     wait_for_begin(state)
   end
 
@@ -442,5 +442,9 @@ defmodule GaoBus.Peer do
     ensure_counter()
     ref = :persistent_term.get(@counter_key)
     :atomics.add_get(ref, 1, 1)
+  end
+
+  defp auth_guid do
+    @auth_guid || GaoBus.Ids.auth_guid()
   end
 end

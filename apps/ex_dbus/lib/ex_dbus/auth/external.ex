@@ -56,6 +56,27 @@ defmodule ExDBus.Auth.External do
   end
 
   defp current_uid do
+    case :os.type() do
+      {:unix, _} ->
+        # Read UID from /proc on Linux, fall back to `id -u` on other Unix
+        case File.read("/proc/self/status") do
+          {:ok, status} -> parse_uid_from_proc(status)
+          _ -> uid_from_command()
+        end
+
+      _ ->
+        0
+    end
+  end
+
+  defp parse_uid_from_proc(status) do
+    case Regex.run(~r/^Uid:\s+(\d+)/m, status) do
+      [_, uid_str] -> String.to_integer(uid_str)
+      _ -> uid_from_command()
+    end
+  end
+
+  defp uid_from_command do
     case System.cmd("id", ["-u"]) do
       {uid_str, 0} -> uid_str |> String.trim() |> String.to_integer()
       _ -> 0

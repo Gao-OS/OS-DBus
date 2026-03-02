@@ -38,13 +38,24 @@ defmodule GaoBusWebWeb.CallLive do
     {:noreply, assign(socket, names: names)}
   end
 
-  def handle_info({:do_call, msg}, socket) do
-    result_text = "Method call sent: #{msg.destination}.#{msg.member}(#{msg.signature || ""})"
-    {:noreply, assign(socket, result: result_text, calling: false)}
+  def handle_info({:call_result, {:ok, reply}}, socket) do
+    result_text =
+      case reply.type do
+        :method_return ->
+          "Reply (#{reply.signature || ""}): #{inspect(reply.body, pretty: true)}"
+
+        :error ->
+          "D-Bus Error: #{reply.error_name}\n#{inspect(reply.body, pretty: true)}"
+
+        _ ->
+          inspect(reply, pretty: true)
+      end
+
+    {:noreply, assign(socket, result: result_text, error: nil, calling: false)}
   end
 
-  def handle_info({:call_error, reason}, socket) do
-    {:noreply, assign(socket, error: "Argument error: #{inspect(reason)}", calling: false)}
+  def handle_info({:call_result, {:error, reason}}, socket) do
+    {:noreply, assign(socket, error: "Call failed: #{inspect(reason)}", result: nil, calling: false)}
   end
 
   def handle_info(_msg, socket), do: {:noreply, socket}
@@ -73,33 +84,41 @@ defmodule GaoBusWebWeb.CallLive do
       # Build the method call
       opts = [destination: assigns.service]
 
-      opts =
+      {opts, arg_error} =
         if assigns.signature != "" do
           case parse_args(assigns.args, assigns.signature) do
             {:ok, body} ->
-              Keyword.merge(opts, signature: assigns.signature, body: body)
+              {Keyword.merge(opts, signature: assigns.signature, body: body), nil}
 
             {:error, reason} ->
-              send(self(), {:call_error, reason})
-              opts
+              {opts, reason}
           end
         else
-          opts
+          {opts, nil}
         end
 
-      iface = if assigns.interface != "", do: assigns.interface, else: nil
+      if arg_error do
+        {:noreply, assign(socket, error: "Argument error: #{inspect(arg_error)}", calling: false)}
+      else
+        iface = if assigns.interface != "", do: assigns.interface, else: nil
 
-      msg = Message.method_call(
-        assigns.object_path,
-        iface,
-        assigns.method,
-        opts
-      )
+        msg =
+          Message.method_call(
+            assigns.object_path,
+            iface,
+            assigns.method,
+            opts
+          )
 
-      # Route through the bus
-      send(self(), {:do_call, msg})
+        caller = self()
 
-      {:noreply, socket}
+        Task.start(fn ->
+          result = route_call(msg)
+          send(caller, {:call_result, result})
+        end)
+
+        {:noreply, socket}
+      end
     end
   end
 
@@ -166,6 +185,38 @@ defmodule GaoBusWebWeb.CallLive do
       </div>
     </div>
     """
+  end
+
+  defp route_call(msg) do
+    # For bus-addressed calls, handle inline via BusInterface
+    if msg.destination == "org.freedesktop.DBus" do
+      state = %{peers: %{}, next_serial: 1}
+      stamped = %{msg | sender: "web-monitor", serial: :erlang.unique_integer([:positive])}
+
+      case GaoBus.BusInterface.handle_message(stamped, self(), state) do
+        {nil, _state} -> {:error, :no_reply}
+        {reply, _state} -> {:ok, reply}
+      end
+    else
+      # For other services, resolve and send through the router
+      case GaoBus.NameRegistry.resolve(msg.destination) do
+        {:ok, _peer_pid} ->
+          # Route through the bus — send as a method call, the router handles delivery
+          stamped = %{msg | sender: "web-monitor", serial: :erlang.unique_integer([:positive])}
+          GaoBus.Router.route(stamped, self())
+
+          # Wait for the reply to come back
+          receive do
+            {:send_message, %{type: type} = reply} when type in [:method_return, :error] ->
+              {:ok, reply}
+          after
+            5_000 -> {:error, :timeout}
+          end
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    end
   end
 
   defp parse_args("", _signature), do: {:ok, []}

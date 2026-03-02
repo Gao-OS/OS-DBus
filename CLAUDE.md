@@ -213,32 +213,32 @@ Client → Server:  BEGIN
 ## Implementation Phases
 
 ### Phase 1 — Minimum Viable Bus
-- [ ] Wire protocol: encode/decode all types with alignment
-- [ ] AUTH EXTERNAL mechanism
-- [ ] Message routing: unicast (method_call → method_return/error)
-- [ ] Name ownership: RequestName, ReleaseName
-- [ ] org.freedesktop.DBus interface on the bus itself
-- [ ] Signal broadcasting (no match rules yet)
+- [x] Wire protocol: encode/decode all types with alignment
+- [x] AUTH EXTERNAL mechanism
+- [x] Message routing: unicast (method_call → method_return/error)
+- [x] Name ownership: RequestName, ReleaseName
+- [x] org.freedesktop.DBus interface on the bus itself
+- [x] Signal broadcasting (no match rules yet)
 
 ### Phase 2 — Real-World Compatibility
-- [ ] Match rules for signal filtering
-- [ ] Introspection (org.freedesktop.DBus.Introspectable)
-- [ ] Properties interface (org.freedesktop.DBus.Properties)
-- [ ] Unix FD passing (SCM_RIGHTS)
+- [x] Match rules for signal filtering
+- [x] Introspection (org.freedesktop.DBus.Introspectable)
+- [x] Properties interface (org.freedesktop.DBus.Properties)
+- [x] Unix FD passing (SCM_RIGHTS)
 - [ ] Interop test: `busctl`, `gdbus`, `dbus-send` work against gao_bus
 
 ### Phase 3 — GaoOS Integration
-- [ ] Capability-based policy engine
-- [ ] org.gaoos.Config1 service
-- [ ] Phoenix web monitor (all LiveView pages)
-- [ ] TCP transport for remote debugging
+- [x] Capability-based policy engine
+- [x] org.gaoos.Config1 service
+- [x] Phoenix web monitor (all LiveView pages)
+- [x] TCP transport for remote debugging
 - [ ] Integration with NetworkManager, BlueZ
 
 ### Phase 4 — Production Readiness
-- [ ] Benchmarks vs dbus-daemon and dbus-broker
+- [x] Benchmarks vs dbus-daemon and dbus-broker
 - [ ] Nerves firmware integration
 - [ ] OTA update support
-- [ ] Distributed bus (multi-node BEAM clustering)
+- [x] Distributed bus (multi-node BEAM clustering)
 
 ## Code Conventions
 

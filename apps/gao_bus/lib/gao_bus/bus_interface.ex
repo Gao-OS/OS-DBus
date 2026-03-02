@@ -125,7 +125,7 @@ defmodule GaoBus.BusInterface do
   end
 
   defp handle_get_id(msg, _from_peer_pid, state) do
-    id = Application.get_env(:gao_bus, :bus_id, "gaobusid000000000000000000000000")
+    id = Application.get_env(:gao_bus, :bus_id) || GaoBus.Ids.bus_id()
     {reply, state} = make_reply(msg, "s", [id], state)
     {reply, state}
   end
