@@ -48,6 +48,7 @@ defmodule GaoBusWebWeb.Layouts do
           <li><a href="/messages" class="btn btn-ghost btn-sm">Messages</a></li>
           <li><a href="/introspect" class="btn btn-ghost btn-sm">Introspect</a></li>
           <li><a href="/call" class="btn btn-ghost btn-sm">Call</a></li>
+          <li><a href="/capabilities" class="btn btn-ghost btn-sm">Capabilities</a></li>
           <li><.theme_toggle /></li>
         </ul>
       </div>

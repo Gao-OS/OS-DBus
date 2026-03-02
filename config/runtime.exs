@@ -16,6 +16,21 @@ import Config
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
+# --- gao_bus runtime config ---
+
+config :gao_bus,
+  socket_path: System.get_env("DBUS_SOCKET_PATH", "/tmp/gao_bus_socket"),
+  cluster: System.get_env("GAO_BUS_CLUSTER") == "true"
+
+# --- gao_config runtime config ---
+
+config :gao_config,
+  store_path: System.get_env("GAO_CONFIG_STORE_PATH", "/tmp/gao_config.dat"),
+  connect_to_bus: System.get_env("GAO_CONFIG_CONNECT") == "true",
+  bus_address: System.get_env("GAO_CONFIG_BUS_ADDRESS", "unix:path=/tmp/gao_bus_socket")
+
+# --- gao_bus_web runtime config ---
+
 if System.get_env("PHX_SERVER") do
   config :gao_bus_web, GaoBusWebWeb.Endpoint, server: true
 end
