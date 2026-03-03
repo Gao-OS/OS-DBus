@@ -14,6 +14,18 @@ defmodule GaoBus.MatchRules do
 
   @table :gao_bus_match_rules
 
+  @type t :: %__MODULE__{
+          type: atom() | nil,
+          sender: String.t() | nil,
+          interface: String.t() | nil,
+          member: String.t() | nil,
+          path: String.t() | nil,
+          path_namespace: String.t() | nil,
+          destination: String.t() | nil,
+          eavesdrop: boolean() | nil,
+          args: map()
+        }
+
   defstruct [
     :type,
     :sender,
@@ -26,6 +38,7 @@ defmodule GaoBus.MatchRules do
     args: %{}
   ]
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -38,6 +51,7 @@ defmodule GaoBus.MatchRules do
 
   Returns `:ok` or `{:error, reason}`.
   """
+  @spec add_match(pid(), String.t()) :: :ok | {:error, term()}
   def add_match(peer_pid, rule_string) do
     case parse(rule_string) do
       {:ok, rule} ->
@@ -51,6 +65,7 @@ defmodule GaoBus.MatchRules do
   @doc """
   Remove a match rule for a peer.
   """
+  @spec remove_match(pid(), String.t()) :: :ok | {:error, String.t()}
   def remove_match(peer_pid, rule_string) do
     GenServer.call(__MODULE__, {:remove, peer_pid, rule_string})
   end
@@ -58,15 +73,15 @@ defmodule GaoBus.MatchRules do
   @doc """
   Remove all match rules for a peer (called on disconnect).
   """
+  @spec peer_disconnected(pid()) :: :ok
   def peer_disconnected(peer_pid) do
     GenServer.cast(__MODULE__, {:peer_disconnected, peer_pid})
   end
 
   @doc """
   Get all peer PIDs that have a match rule matching the given signal.
-
-  Returns a list of `{pid, unique_name}` tuples.
   """
+  @spec matching_peers(ExDBus.Message.t()) :: [pid()]
   def matching_peers(signal) do
     try do
       :ets.tab2list(@table)
@@ -81,6 +96,7 @@ defmodule GaoBus.MatchRules do
   @doc """
   Parse a D-Bus match rule string into a `%GaoBus.MatchRules{}` struct.
   """
+  @spec parse(String.t()) :: {:ok, t()} | {:error, term()}
   def parse(rule_string) when is_binary(rule_string) do
     pairs = split_rule(rule_string)
 
@@ -101,6 +117,7 @@ defmodule GaoBus.MatchRules do
   @doc """
   Check if a signal message matches a rule.
   """
+  @spec matches?(t(), ExDBus.Message.t()) :: boolean()
   def matches?(%__MODULE__{} = rule, %ExDBus.Message{} = msg) do
     match_field(rule.type, msg.type) and
       match_field(rule.sender, msg.sender) and

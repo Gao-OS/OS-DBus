@@ -32,6 +32,7 @@ defmodule GaoBus.Policy.Capability do
 
   @table :gao_bus_capabilities
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -39,6 +40,7 @@ defmodule GaoBus.Policy.Capability do
   @doc """
   Grant a capability to a peer identified by unique name.
   """
+  @spec grant(String.t(), tuple()) :: :ok
   def grant(unique_name, capability) do
     GenServer.call(__MODULE__, {:grant, unique_name, capability})
   end
@@ -46,6 +48,7 @@ defmodule GaoBus.Policy.Capability do
   @doc """
   Revoke a capability from a peer.
   """
+  @spec revoke(String.t(), tuple()) :: :ok
   def revoke(unique_name, capability) do
     GenServer.call(__MODULE__, {:revoke, unique_name, capability})
   end
@@ -53,6 +56,7 @@ defmodule GaoBus.Policy.Capability do
   @doc """
   Get all capabilities for a peer.
   """
+  @spec capabilities(String.t()) :: [tuple()]
   def capabilities(unique_name) do
     try do
       :ets.lookup(@table, unique_name)
@@ -65,6 +69,7 @@ defmodule GaoBus.Policy.Capability do
   @doc """
   Set up default capabilities for a peer based on credentials.
   """
+  @spec setup_defaults(String.t(), map()) :: :ok
   def setup_defaults(unique_name, credentials) do
     GenServer.cast(__MODULE__, {:setup_defaults, unique_name, credentials})
   end
@@ -72,6 +77,7 @@ defmodule GaoBus.Policy.Capability do
   @doc """
   Remove all capabilities for a disconnected peer.
   """
+  @spec peer_disconnected(String.t()) :: :ok
   def peer_disconnected(unique_name) do
     GenServer.cast(__MODULE__, {:peer_disconnected, unique_name})
   end

@@ -14,6 +14,7 @@ defmodule GaoConfig.BusClient do
 
   @service_name "org.gaoos.Config1"
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -21,6 +22,7 @@ defmodule GaoConfig.BusClient do
   @doc """
   Get the connection pid if connected.
   """
+  @spec connection() :: pid() | nil
   def connection do
     GenServer.call(__MODULE__, :get_connection)
   end

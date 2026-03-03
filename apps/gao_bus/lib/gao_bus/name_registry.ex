@@ -28,6 +28,7 @@ defmodule GaoBus.NameRegistry do
   @name_non_existent 2
   @name_not_owner 3
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -41,6 +42,7 @@ defmodule GaoBus.NameRegistry do
   - 3 = exists (cannot replace)
   - 4 = already owner
   """
+  @spec request_name(String.t(), non_neg_integer(), pid(), String.t()) :: {:ok, 1..4}
   def request_name(name, flags, peer_pid, unique_name) do
     GenServer.call(__MODULE__, {:request_name, name, flags, peer_pid, unique_name})
   end
@@ -53,6 +55,7 @@ defmodule GaoBus.NameRegistry do
   - 2 = non-existent
   - 3 = not owner
   """
+  @spec release_name(String.t(), pid()) :: {:ok, 1..3}
   def release_name(name, peer_pid) do
     GenServer.call(__MODULE__, {:release_name, name, peer_pid})
   end
@@ -60,6 +63,7 @@ defmodule GaoBus.NameRegistry do
   @doc """
   Get the unique name of the owner of a well-known name.
   """
+  @spec get_name_owner(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def get_name_owner(name) do
     GenServer.call(__MODULE__, {:get_name_owner, name})
   end
@@ -67,6 +71,7 @@ defmodule GaoBus.NameRegistry do
   @doc """
   List all registered names (well-known + unique).
   """
+  @spec list_names() :: [String.t()]
   def list_names do
     GenServer.call(__MODULE__, :list_names)
   end
@@ -74,6 +79,7 @@ defmodule GaoBus.NameRegistry do
   @doc """
   Check if a name exists.
   """
+  @spec name_has_owner?(String.t()) :: boolean()
   def name_has_owner?(name) do
     GenServer.call(__MODULE__, {:name_has_owner, name})
   end
@@ -81,6 +87,7 @@ defmodule GaoBus.NameRegistry do
   @doc """
   Register a unique name for a peer. Called during Hello().
   """
+  @spec register_unique(String.t(), pid()) :: :ok
   def register_unique(unique_name, peer_pid) do
     GenServer.call(__MODULE__, {:register_unique, unique_name, peer_pid})
   end
@@ -88,6 +95,7 @@ defmodule GaoBus.NameRegistry do
   @doc """
   Remove all names owned by a peer (called when peer disconnects).
   """
+  @spec peer_disconnected(pid()) :: :ok
   def peer_disconnected(peer_pid) do
     GenServer.cast(__MODULE__, {:peer_disconnected, peer_pid})
   end
@@ -95,6 +103,7 @@ defmodule GaoBus.NameRegistry do
   @doc """
   Resolve a name (well-known or unique) to a peer pid.
   """
+  @spec resolve(String.t()) :: {:ok, pid()} | {:bus, pid()} | {:error, :name_not_found}
   def resolve(name) do
     GenServer.call(__MODULE__, {:resolve, name})
   end

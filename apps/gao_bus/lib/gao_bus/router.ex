@@ -13,6 +13,7 @@ defmodule GaoBus.Router do
 
   require Logger
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -20,6 +21,7 @@ defmodule GaoBus.Router do
   @doc """
   Route a message from a peer.
   """
+  @spec route(ExDBus.Message.t(), pid()) :: :ok
   def route(message, from_peer_pid) do
     GenServer.cast(__MODULE__, {:route, message, from_peer_pid})
   end
@@ -27,6 +29,7 @@ defmodule GaoBus.Router do
   @doc """
   Emit a signal from the bus itself (e.g., NameOwnerChanged).
   """
+  @spec emit_signal(String.t(), String.t(), String.t(), String.t() | nil, list()) :: :ok
   def emit_signal(path, interface, member, signature, body) do
     GenServer.cast(__MODULE__, {:emit_signal, path, interface, member, signature, body})
   end
@@ -34,6 +37,7 @@ defmodule GaoBus.Router do
   @doc """
   Register a peer for signal broadcasting.
   """
+  @spec register_peer(pid(), String.t()) :: :ok
   def register_peer(peer_pid, unique_name) do
     GenServer.cast(__MODULE__, {:register_peer, peer_pid, unique_name})
   end
@@ -41,6 +45,7 @@ defmodule GaoBus.Router do
   @doc """
   Unregister a peer.
   """
+  @spec unregister_peer(pid()) :: :ok
   def unregister_peer(peer_pid) do
     GenServer.cast(__MODULE__, {:unregister_peer, peer_pid})
   end
@@ -114,6 +119,10 @@ defmodule GaoBus.Router do
   @impl true
   def handle_info({:DOWN, _ref, :process, peer_pid, _reason}, state) do
     {:noreply, %{state | peers: Map.delete(state.peers, peer_pid)}}
+  end
+
+  def handle_info(_msg, state) do
+    {:noreply, state}
   end
 
   # --- Routing logic ---

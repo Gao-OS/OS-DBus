@@ -25,6 +25,7 @@ defmodule GaoBus.BusInterface do
 
   Returns `{reply_message | nil, updated_router_state}`.
   """
+  @spec handle_message(Message.t(), pid(), map()) :: {Message.t() | nil, map()}
   def handle_message(%Message{type: :method_call} = msg, from_peer_pid, state) do
     case {msg.interface, msg.member} do
       {"org.freedesktop.DBus.Introspectable", "Introspect"} ->

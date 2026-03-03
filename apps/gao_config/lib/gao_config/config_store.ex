@@ -12,6 +12,7 @@ defmodule GaoConfig.ConfigStore do
 
   @table :gao_config_store
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -19,6 +20,7 @@ defmodule GaoConfig.ConfigStore do
   @doc """
   Get a config value by section and key.
   """
+  @spec get(String.t(), String.t()) :: {:ok, term()} | {:error, :not_found}
   def get(section, key) do
     case :ets.lookup(@table, {section, key}) do
       [{{^section, ^key}, value}] -> {:ok, value}
@@ -29,6 +31,7 @@ defmodule GaoConfig.ConfigStore do
   @doc """
   Set a config value.
   """
+  @spec set(String.t(), String.t(), term()) :: :ok
   def set(section, key, value) do
     GenServer.call(__MODULE__, {:set, section, key, value})
   end
@@ -36,6 +39,7 @@ defmodule GaoConfig.ConfigStore do
   @doc """
   Delete a config value.
   """
+  @spec delete(String.t(), String.t()) :: :ok
   def delete(section, key) do
     GenServer.call(__MODULE__, {:delete, section, key})
   end
@@ -43,6 +47,7 @@ defmodule GaoConfig.ConfigStore do
   @doc """
   Clear all entries. Used by tests.
   """
+  @spec clear() :: :ok
   def clear do
     GenServer.call(__MODULE__, :clear)
   end
@@ -50,6 +55,7 @@ defmodule GaoConfig.ConfigStore do
   @doc """
   List all keys in a section.
   """
+  @spec list(String.t()) :: [{String.t(), term()}]
   def list(section) do
     matches = :ets.match(@table, {{section, :"$1"}, :"$2"})
     Enum.map(matches, fn [key, value] -> {key, value} end)
@@ -58,6 +64,7 @@ defmodule GaoConfig.ConfigStore do
   @doc """
   List all sections.
   """
+  @spec list_sections() :: [String.t()]
   def list_sections do
     :ets.foldl(
       fn {{section, _key}, _value}, acc -> MapSet.put(acc, section) end,

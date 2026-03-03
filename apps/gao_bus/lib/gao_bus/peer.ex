@@ -40,13 +40,17 @@ defmodule GaoBus.Peer do
   # Global atomic counter for unique names
   @counter_key :gao_bus_peer_counter
 
+  @spec ensure_counter() :: :ok
   def ensure_counter do
     unless :persistent_term.get(@counter_key, nil) do
       ref = :atomics.new(1, signed: false)
       :persistent_term.put(@counter_key, ref)
     end
+
+    :ok
   end
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
   end
@@ -54,6 +58,7 @@ defmodule GaoBus.Peer do
   @doc """
   Get this peer's unique name. Returns nil if Hello() hasn't been called.
   """
+  @spec get_unique_name(pid()) :: String.t() | nil
   def get_unique_name(pid) do
     GenServer.call(pid, :get_unique_name)
   end
@@ -61,6 +66,7 @@ defmodule GaoBus.Peer do
   @doc """
   Get this peer's credentials. Returns nil if not authenticated.
   """
+  @spec get_credentials(pid()) :: map() | nil
   def get_credentials(pid) do
     GenServer.call(pid, :get_credentials)
   end
@@ -68,6 +74,7 @@ defmodule GaoBus.Peer do
   @doc """
   Assign a unique name to this peer. Called during Hello().
   """
+  @spec assign_unique_name(pid()) :: String.t()
   def assign_unique_name(pid) do
     GenServer.call(pid, :assign_unique_name)
   end
@@ -158,6 +165,10 @@ defmodule GaoBus.Peer do
     Logger.warning("GaoBus.Peer: socket error: #{inspect(reason)}")
     cleanup(state)
     {:stop, reason, state}
+  end
+
+  def handle_info(_msg, state) do
+    {:noreply, state}
   end
 
   @impl true

@@ -7,6 +7,7 @@ defmodule GaoBus.PeerSupervisor do
 
   use DynamicSupervisor
 
+  @spec start_link(keyword()) :: Supervisor.on_start()
   def start_link(opts) do
     DynamicSupervisor.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -19,6 +20,7 @@ defmodule GaoBus.PeerSupervisor do
   @doc """
   Start a new Peer process under this supervisor.
   """
+  @spec start_peer(:socket.socket()) :: DynamicSupervisor.on_start_child()
   def start_peer(socket) do
     DynamicSupervisor.start_child(__MODULE__, {GaoBus.Peer, socket: socket})
   end

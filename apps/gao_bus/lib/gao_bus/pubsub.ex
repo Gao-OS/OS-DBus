@@ -8,8 +8,10 @@ defmodule GaoBus.PubSub do
 
   @topic "gao_bus:events"
 
+  @spec topic() :: String.t()
   def topic, do: @topic
 
+  @spec subscribe() :: :ok
   def subscribe do
     case pubsub_name() do
       nil -> :ok
@@ -17,6 +19,7 @@ defmodule GaoBus.PubSub do
     end
   end
 
+  @spec broadcast(term()) :: :ok
   def broadcast(event) do
     case pubsub_name() do
       nil -> :ok

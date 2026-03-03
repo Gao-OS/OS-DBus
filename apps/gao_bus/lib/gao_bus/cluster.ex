@@ -35,6 +35,7 @@ defmodule GaoBus.Cluster do
   @pg_group :gao_bus_cluster
   @scope :gao_bus_pg
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -44,6 +45,7 @@ defmodule GaoBus.Cluster do
 
   Returns `{:ok, :forwarded}` if sent, `{:error, :not_found}` if no remote node has it.
   """
+  @spec route_remote(Message.t()) :: {:ok, :forwarded} | {:error, :not_found}
   def route_remote(%Message{destination: dest} = msg) when is_binary(dest) do
     case find_remote_owner(dest) do
       {:ok, {node, remote_pid}} ->
@@ -58,6 +60,7 @@ defmodule GaoBus.Cluster do
   @doc """
   Register a well-known name on this node so remote nodes can find it.
   """
+  @spec register_name(String.t(), pid()) :: :ok
   def register_name(name, peer_pid) do
     if Process.whereis(__MODULE__) do
       GenServer.cast(__MODULE__, {:register_name, name, peer_pid})
@@ -67,6 +70,7 @@ defmodule GaoBus.Cluster do
   @doc """
   Unregister a well-known name from cluster visibility.
   """
+  @spec unregister_name(String.t()) :: :ok
   def unregister_name(name) do
     if Process.whereis(__MODULE__) do
       GenServer.cast(__MODULE__, {:unregister_name, name})
@@ -78,6 +82,7 @@ defmodule GaoBus.Cluster do
 
   Returns `[{name, node}]` tuples.
   """
+  @spec cluster_names() :: [{String.t(), node()}]
   def cluster_names do
     if Process.whereis(__MODULE__) do
       GenServer.call(__MODULE__, :cluster_names)
@@ -89,6 +94,7 @@ defmodule GaoBus.Cluster do
   @doc """
   List connected cluster nodes.
   """
+  @spec nodes() :: [node()]
   def nodes do
     members = :pg.get_members(@scope, @pg_group)
 

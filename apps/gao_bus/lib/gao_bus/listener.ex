@@ -13,6 +13,7 @@ defmodule GaoBus.Listener do
 
   require Logger
 
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -69,6 +70,10 @@ defmodule GaoBus.Listener do
     end
 
     send(self(), :accept)
+    {:noreply, state}
+  end
+
+  def handle_info(_msg, state) do
     {:noreply, state}
   end
 

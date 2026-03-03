@@ -12,6 +12,7 @@ defmodule GaoBus.Ids do
   @doc """
   Returns the auth GUID (32 lowercase hex chars), generating once per boot.
   """
+  @spec auth_guid() :: String.t()
   def auth_guid do
     case :persistent_term.get(@guid_key, nil) do
       nil ->
@@ -28,6 +29,7 @@ defmodule GaoBus.Ids do
   Returns the bus instance ID (32 lowercase hex chars), generating once per boot.
   Tries /etc/machine-id first, falls back to random.
   """
+  @spec bus_id() :: String.t()
   def bus_id do
     case :persistent_term.get(@bus_id_key, nil) do
       nil ->
