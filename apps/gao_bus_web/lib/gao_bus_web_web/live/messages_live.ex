@@ -15,6 +15,8 @@ defmodule GaoBusWebWeb.MessagesLive do
        page_title: "Messages",
        paused: false,
        selected_id: nil,
+       selected_msg: nil,
+       messages_map: %{},
        filter_type: "",
        filter_sender: "",
        filter_dest: "",
@@ -48,9 +50,14 @@ defmodule GaoBusWebWeb.MessagesLive do
           error_name: msg.error_name
         }
 
+        messages_map =
+          socket.assigns.messages_map
+          |> Map.put(entry.id, entry)
+          |> prune_map(counter)
+
         socket =
           socket
-          |> assign(msg_counter: counter)
+          |> assign(msg_counter: counter, messages_map: messages_map)
           |> stream_insert(:messages, entry, at: 0, limit: @max_messages)
 
         {:noreply, socket}
@@ -68,7 +75,10 @@ defmodule GaoBusWebWeb.MessagesLive do
   end
 
   def handle_event("clear", _params, socket) do
-    {:noreply, stream(socket, :messages, [], reset: true)}
+    {:noreply,
+     socket
+     |> assign(selected_id: nil, selected_msg: nil, messages_map: %{})
+     |> stream(:messages, [], reset: true)}
   end
 
   def handle_event("filter", params, socket) do
@@ -83,8 +93,12 @@ defmodule GaoBusWebWeb.MessagesLive do
   end
 
   def handle_event("select", %{"id" => id}, socket) do
-    selected = if socket.assigns.selected_id == id, do: nil, else: id
-    {:noreply, assign(socket, selected_id: selected)}
+    if socket.assigns.selected_id == id do
+      {:noreply, assign(socket, selected_id: nil, selected_msg: nil)}
+    else
+      msg = Map.get(socket.assigns.messages_map, id)
+      {:noreply, assign(socket, selected_id: id, selected_msg: msg)}
+    end
   end
 
   @impl true
@@ -151,9 +165,53 @@ defmodule GaoBusWebWeb.MessagesLive do
         </table>
       </div>
 
-      <div :if={@selected_id} class="card bg-base-200 p-4">
-        <h3 class="font-semibold mb-2">Message Details</h3>
-        <p class="text-sm opacity-70">Click a message row to see its full body and signature.</p>
+      <div :if={@selected_msg} class="card bg-base-200 p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-semibold">Message Details</h3>
+          <.type_badge type={@selected_msg.type} />
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+          <div>
+            <span class="opacity-50">Sender</span>
+            <p class="font-mono text-xs">{@selected_msg.sender}</p>
+          </div>
+          <div>
+            <span class="opacity-50">Destination</span>
+            <p class="font-mono text-xs">{@selected_msg.destination}</p>
+          </div>
+          <div>
+            <span class="opacity-50">Serial</span>
+            <p class="font-mono text-xs">{@selected_msg.serial}</p>
+          </div>
+          <div>
+            <span class="opacity-50">Path</span>
+            <p class="font-mono text-xs">{@selected_msg.path}</p>
+          </div>
+          <div>
+            <span class="opacity-50">Interface</span>
+            <p class="font-mono text-xs">{@selected_msg.interface}</p>
+          </div>
+          <div>
+            <span class="opacity-50">Member</span>
+            <p class="font-mono text-xs">{@selected_msg.member}</p>
+          </div>
+        </div>
+
+        <div :if={@selected_msg.error_name}>
+          <span class="text-sm opacity-50">Error</span>
+          <p class="font-mono text-xs text-error">{@selected_msg.error_name}</p>
+        </div>
+
+        <div>
+          <span class="text-sm opacity-50">Signature</span>
+          <p class="font-mono text-xs">{@selected_msg.signature || "(none)"}</p>
+        </div>
+
+        <div>
+          <span class="text-sm opacity-50">Body</span>
+          <pre class="font-mono text-xs bg-base-300 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">{inspect(@selected_msg.body, pretty: true, limit: :infinity, width: 80)}</pre>
+        </div>
       </div>
     </div>
     """
@@ -191,4 +249,18 @@ defmodule GaoBusWebWeb.MessagesLive do
 
   defp contains?(nil, _filter), do: false
   defp contains?(value, filter), do: String.contains?(value, filter)
+
+  # Keep the map from growing unbounded — only retain recent entries
+  defp prune_map(map, counter) when map_size(map) > @max_messages do
+    cutoff = counter - @max_messages
+
+    Map.filter(map, fn {"msg-" <> n_str, _} ->
+      case Integer.parse(n_str) do
+        {n, ""} -> n > cutoff
+        _ -> true
+      end
+    end)
+  end
+
+  defp prune_map(map, _counter), do: map
 end

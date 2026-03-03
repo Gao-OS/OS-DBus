@@ -1,18 +1,5 @@
 defmodule GaoBusTest do
   @moduledoc """
-  Documentation for `GaoBusTest`.
+  Integration and compliance test suite for gao_bus.
   """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> GaoBusTest.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
 end

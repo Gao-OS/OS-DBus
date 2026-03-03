@@ -109,6 +109,8 @@ defmodule ExDBus.Object do
   end
 
   defp handle_properties(msg, object_mod) do
+    Code.ensure_loaded(object_mod)
+
     case msg.member do
       "Get" ->
         [interface, property] = msg.body

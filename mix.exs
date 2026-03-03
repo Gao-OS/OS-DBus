@@ -6,7 +6,13 @@ defmodule GaoDbus.MixProject do
       apps_path: "apps",
       version: "0.1.0",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      name: "GaoDbus",
+      source_url: "https://github.com/Gao-OS/OS-DBus",
+      docs: [
+        main: "readme",
+        extras: ["README.md"]
+      ]
     ]
   end
 

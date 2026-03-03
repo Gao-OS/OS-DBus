@@ -1,8 +1,7 @@
-defmodule GaoBusTest.Test do
+defmodule GaoBusTest.ModuleTest do
   use ExUnit.Case
-  doctest GaoBusTest
 
-  test "greets the world" do
-    assert GaoBusTest.hello() == :world
+  test "module is loaded" do
+    assert Code.ensure_loaded?(GaoBusTest)
   end
 end
