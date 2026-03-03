@@ -1,5 +1,6 @@
 defmodule GaoBusWebWeb.IntrospectLive do
   use GaoBusWebWeb, :live_view
+  @moduledoc "D-Bus object introspection browser for exploring service interfaces."
 
   alias ExDBus.Message
 
@@ -64,7 +65,9 @@ defmodule GaoBusWebWeb.IntrospectLive do
 
   @impl true
   def handle_event("select_name", %{"name" => name}, socket) do
-    socket = assign(socket, selected_name: name, interfaces: [], children: [], loading: true, error: nil)
+    socket =
+      assign(socket, selected_name: name, interfaces: [], children: [], loading: true, error: nil)
+
     do_introspect(name, "/")
     {:noreply, socket}
   end
@@ -123,15 +126,21 @@ defmodule GaoBusWebWeb.IntrospectLive do
               <div :if={iface.methods != []} class="space-y-1">
                 <h4 class="text-xs font-semibold opacity-70">Methods</h4>
                 <div :for={method <- iface.methods} class="text-xs font-mono pl-2">
-                  <span class="text-primary">{method.name}</span>(<%= for arg <- (method.args || []), arg.direction == :in do %><span class="opacity-70">{arg.name}:{arg.type}</span> <% end %>) ->
-                  <%= for arg <- (method.args || []), arg.direction == :out do %><span class="text-success">{arg.type}</span><% end %>
+                  <span class="text-primary">{method.name}</span>(<%= for arg <- (method.args || []), arg.direction == :in do %>
+                    <span class="opacity-70">{arg.name}:{arg.type}</span>
+                  <% end %>) ->
+                  <%= for arg <- (method.args || []), arg.direction == :out do %>
+                    <span class="text-success">{arg.type}</span>
+                  <% end %>
                 </div>
               </div>
 
               <div :if={iface.signals != []} class="space-y-1">
                 <h4 class="text-xs font-semibold opacity-70">Signals</h4>
                 <div :for={signal <- iface.signals} class="text-xs font-mono pl-2">
-                  <span class="text-warning">{signal.name}</span>(<%= for arg <- (signal.args || []) do %><span class="opacity-70">{arg.name}:{arg.type}</span> <% end %>)
+                  <span class="text-warning">{signal.name}</span>(<%= for arg <- (signal.args || []) do %>
+                    <span class="opacity-70">{arg.name}:{arg.type}</span>
+                  <% end %>)
                 </div>
               </div>
 

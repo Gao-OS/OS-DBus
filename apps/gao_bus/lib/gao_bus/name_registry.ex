@@ -155,7 +155,12 @@ defmodule GaoBus.NameRegistry do
             true ->
               # Add to queue and track in pid_names for disconnect cleanup
               new_queue = queue ++ [{peer_pid, unique_name, flags}]
-              :ets.insert(state.names, {name, current_pid, current_unique, current_flags, new_queue})
+
+              :ets.insert(
+                state.names,
+                {name, current_pid, current_unique, current_flags, new_queue}
+              )
+
               :ets.insert(state.pid_names, {peer_pid, name})
               @name_in_queue
           end
@@ -196,7 +201,9 @@ defmodule GaoBus.NameRegistry do
   def handle_call({:get_name_owner, name}, _from, state) do
     result =
       case :ets.lookup(state.names, name) do
-        [{^name, _pid, unique_name, _, _}] -> {:ok, unique_name}
+        [{^name, _pid, unique_name, _, _}] ->
+          {:ok, unique_name}
+
         [] ->
           # Check unique names
           case :ets.lookup(state.uniques, name) do
@@ -237,7 +244,9 @@ defmodule GaoBus.NameRegistry do
   def handle_call({:resolve, name}, _from, state) do
     result =
       case :ets.lookup(state.names, name) do
-        [{^name, pid, _, _, _}] -> {:ok, pid}
+        [{^name, pid, _, _, _}] ->
+          {:ok, pid}
+
         [] ->
           case :ets.lookup(state.uniques, name) do
             [{^name, pid}] -> {:ok, pid}
@@ -309,8 +318,10 @@ defmodule GaoBus.NameRegistry do
     cond do
       new_owner != "" and old_owner == "" ->
         GaoBus.PubSub.broadcast({:name_acquired, name, new_owner})
+
       new_owner == "" and old_owner != "" ->
         GaoBus.PubSub.broadcast({:name_released, name, old_owner})
+
       true ->
         GaoBus.PubSub.broadcast({:name_acquired, name, new_owner})
     end

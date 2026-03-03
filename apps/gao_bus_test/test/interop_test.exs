@@ -39,8 +39,12 @@ defmodule GaoBusTest.InteropTest do
     @describetag skip: is_nil(@dbus_send)
 
     test "Hello via dbus-send" do
-      case run_dbus_send(["--print-reply", "--dest=org.freedesktop.DBus",
-                          "/org/freedesktop/DBus", "org.freedesktop.DBus.Hello"]) do
+      case run_dbus_send([
+             "--print-reply",
+             "--dest=org.freedesktop.DBus",
+             "/org/freedesktop/DBus",
+             "org.freedesktop.DBus.Hello"
+           ]) do
         {output, 0} ->
           assert output =~ "string"
           assert output =~ ":1."
@@ -52,8 +56,12 @@ defmodule GaoBusTest.InteropTest do
     end
 
     test "ListNames via dbus-send" do
-      case run_dbus_send(["--print-reply", "--dest=org.freedesktop.DBus",
-                          "/org/freedesktop/DBus", "org.freedesktop.DBus.ListNames"]) do
+      case run_dbus_send([
+             "--print-reply",
+             "--dest=org.freedesktop.DBus",
+             "/org/freedesktop/DBus",
+             "org.freedesktop.DBus.ListNames"
+           ]) do
         {output, 0} ->
           assert output =~ "array"
           assert output =~ "org.freedesktop.DBus"
@@ -64,8 +72,12 @@ defmodule GaoBusTest.InteropTest do
     end
 
     test "GetId via dbus-send" do
-      case run_dbus_send(["--print-reply", "--dest=org.freedesktop.DBus",
-                          "/org/freedesktop/DBus", "org.freedesktop.DBus.GetId"]) do
+      case run_dbus_send([
+             "--print-reply",
+             "--dest=org.freedesktop.DBus",
+             "/org/freedesktop/DBus",
+             "org.freedesktop.DBus.GetId"
+           ]) do
         {output, 0} ->
           assert output =~ "string"
 
@@ -75,9 +87,12 @@ defmodule GaoBusTest.InteropTest do
     end
 
     test "Introspect via dbus-send" do
-      case run_dbus_send(["--print-reply", "--dest=org.freedesktop.DBus",
-                          "/org/freedesktop/DBus",
-                          "org.freedesktop.DBus.Introspectable.Introspect"]) do
+      case run_dbus_send([
+             "--print-reply",
+             "--dest=org.freedesktop.DBus",
+             "/org/freedesktop/DBus",
+             "org.freedesktop.DBus.Introspectable.Introspect"
+           ]) do
         {output, 0} ->
           assert output =~ "<interface"
           assert output =~ "org.freedesktop.DBus"
@@ -88,9 +103,13 @@ defmodule GaoBusTest.InteropTest do
     end
 
     test "NameHasOwner via dbus-send" do
-      case run_dbus_send(["--print-reply", "--dest=org.freedesktop.DBus",
-                          "/org/freedesktop/DBus", "org.freedesktop.DBus.NameHasOwner",
-                          "string:org.freedesktop.DBus"]) do
+      case run_dbus_send([
+             "--print-reply",
+             "--dest=org.freedesktop.DBus",
+             "/org/freedesktop/DBus",
+             "org.freedesktop.DBus.NameHasOwner",
+             "string:org.freedesktop.DBus"
+           ]) do
         {output, 0} ->
           assert output =~ "boolean true"
 
@@ -114,8 +133,13 @@ defmodule GaoBusTest.InteropTest do
     end
 
     test "busctl call Hello" do
-      case run_busctl(["call", "org.freedesktop.DBus", "/org/freedesktop/DBus",
-                        "org.freedesktop.DBus", "Hello"]) do
+      case run_busctl([
+             "call",
+             "org.freedesktop.DBus",
+             "/org/freedesktop/DBus",
+             "org.freedesktop.DBus",
+             "Hello"
+           ]) do
         {output, 0} ->
           assert output =~ ":1."
 
@@ -125,8 +149,13 @@ defmodule GaoBusTest.InteropTest do
     end
 
     test "busctl call ListNames" do
-      case run_busctl(["call", "org.freedesktop.DBus", "/org/freedesktop/DBus",
-                        "org.freedesktop.DBus", "ListNames"]) do
+      case run_busctl([
+             "call",
+             "org.freedesktop.DBus",
+             "/org/freedesktop/DBus",
+             "org.freedesktop.DBus",
+             "ListNames"
+           ]) do
         {output, 0} ->
           assert output =~ "org.freedesktop.DBus"
 
@@ -136,8 +165,12 @@ defmodule GaoBusTest.InteropTest do
     end
 
     test "busctl introspect" do
-      case run_busctl(["introspect", "org.freedesktop.DBus", "/org/freedesktop/DBus",
-                        "--no-pager"]) do
+      case run_busctl([
+             "introspect",
+             "org.freedesktop.DBus",
+             "/org/freedesktop/DBus",
+             "--no-pager"
+           ]) do
         {output, 0} ->
           assert output =~ "Hello"
           assert output =~ "ListNames"

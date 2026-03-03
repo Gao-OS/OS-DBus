@@ -16,7 +16,8 @@ defmodule ExDbus.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       name: "ExDBus",
-      description: "Pure Elixir D-Bus wire protocol implementation with no C dependencies or NIFs.",
+      description:
+        "Pure Elixir D-Bus wire protocol implementation with no C dependencies or NIFs.",
       source_url: @source_url,
       docs: docs(),
       package: package()
@@ -45,7 +46,7 @@ defmodule ExDbus.MixProject do
 
   defp package do
     [
-      licenses: ["MIT"],
+      licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @source_url
       },

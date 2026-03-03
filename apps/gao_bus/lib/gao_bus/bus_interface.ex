@@ -59,13 +59,28 @@ defmodule GaoBus.BusInterface do
 
   defp dispatch_bus_method_ext(msg, from_peer_pid, state) do
     case msg.member do
-      "ListActivatableNames" -> handle_list_activatable_names(msg, from_peer_pid, state)
-      "NameHasOwner" -> handle_name_has_owner(msg, from_peer_pid, state)
-      "AddMatch" -> handle_add_match(msg, from_peer_pid, state)
-      "RemoveMatch" -> handle_remove_match(msg, from_peer_pid, state)
-      "GetId" -> handle_get_id(msg, from_peer_pid, state)
-      _ -> {make_error(msg, "org.freedesktop.DBus.Error.UnknownMethod",
-              "Unknown method: #{msg.member}", state), state}
+      "ListActivatableNames" ->
+        handle_list_activatable_names(msg, from_peer_pid, state)
+
+      "NameHasOwner" ->
+        handle_name_has_owner(msg, from_peer_pid, state)
+
+      "AddMatch" ->
+        handle_add_match(msg, from_peer_pid, state)
+
+      "RemoveMatch" ->
+        handle_remove_match(msg, from_peer_pid, state)
+
+      "GetId" ->
+        handle_get_id(msg, from_peer_pid, state)
+
+      _ ->
+        {make_error(
+           msg,
+           "org.freedesktop.DBus.Error.UnknownMethod",
+           "Unknown method: #{msg.member}",
+           state
+         ), state}
     end
   end
 
@@ -87,8 +102,8 @@ defmodule GaoBus.BusInterface do
 
       _ ->
         # Already has a name — error per spec
-        {make_error(msg, "org.freedesktop.DBus.Error.Failed",
-          "Already called Hello", state), state}
+        {make_error(msg, "org.freedesktop.DBus.Error.Failed", "Already called Hello", state),
+         state}
     end
   end
 
@@ -120,8 +135,12 @@ defmodule GaoBus.BusInterface do
         {reply, state}
 
       {:error, error_name} ->
-        {make_error(msg, error_name,
-          "The name #{name} was not provided by any .service files", state), state}
+        {make_error(
+           msg,
+           error_name,
+           "The name #{name} was not provided by any .service files",
+           state
+         ), state}
     end
   end
 
@@ -159,8 +178,12 @@ defmodule GaoBus.BusInterface do
         {reply, state}
 
       {:error, reason} ->
-        {make_error(msg, "org.freedesktop.DBus.Error.MatchRuleInvalid",
-          "Invalid match rule: #{inspect(reason)}", state), state}
+        {make_error(
+           msg,
+           "org.freedesktop.DBus.Error.MatchRuleInvalid",
+           "Invalid match rule: #{inspect(reason)}",
+           state
+         ), state}
     end
   end
 
@@ -173,21 +196,21 @@ defmodule GaoBus.BusInterface do
         {reply, state}
 
       {:error, error_name} ->
-        {make_error(msg, error_name,
-          "Match rule not found", state), state}
+        {make_error(msg, error_name, "Match rule not found", state), state}
     end
   end
 
   defp handle_introspect(msg, _from_peer_pid, state) do
-    xml = ExDBus.Introspection.to_xml(
-      "/org/freedesktop/DBus",
-      [
-        ExDBus.Introspection.bus_interface(),
-        ExDBus.Introspection.introspectable_interface(),
-        ExDBus.Introspection.properties_interface(),
-        ExDBus.Introspection.peer_interface()
-      ]
-    )
+    xml =
+      ExDBus.Introspection.to_xml(
+        "/org/freedesktop/DBus",
+        [
+          ExDBus.Introspection.bus_interface(),
+          ExDBus.Introspection.introspectable_interface(),
+          ExDBus.Introspection.properties_interface(),
+          ExDBus.Introspection.peer_interface()
+        ]
+      )
 
     {reply, state} = make_reply(msg, "s", [xml], state)
     {reply, state}
@@ -202,22 +225,37 @@ defmodule GaoBus.BusInterface do
         {reply, state}
 
       "Interfaces" ->
-        interfaces = ["org.freedesktop.DBus", "org.freedesktop.DBus.Introspectable",
-                       "org.freedesktop.DBus.Properties", "org.freedesktop.DBus.Peer"]
+        interfaces = [
+          "org.freedesktop.DBus",
+          "org.freedesktop.DBus.Introspectable",
+          "org.freedesktop.DBus.Properties",
+          "org.freedesktop.DBus.Peer"
+        ]
+
         {reply, state} = make_reply(msg, "v", [{"as", interfaces}], state)
         {reply, state}
 
       _ ->
-        {make_error(msg, "org.freedesktop.DBus.Error.UnknownProperty",
-          "Unknown property: #{property_name}", state), state}
+        {make_error(
+           msg,
+           "org.freedesktop.DBus.Error.UnknownProperty",
+           "Unknown property: #{property_name}",
+           state
+         ), state}
     end
   end
 
   defp handle_properties_get_all(msg, _from_peer_pid, state) do
     props = [
       {"Features", {"as", []}},
-      {"Interfaces", {"as", ["org.freedesktop.DBus", "org.freedesktop.DBus.Introspectable",
-                              "org.freedesktop.DBus.Properties", "org.freedesktop.DBus.Peer"]}}
+      {"Interfaces",
+       {"as",
+        [
+          "org.freedesktop.DBus",
+          "org.freedesktop.DBus.Introspectable",
+          "org.freedesktop.DBus.Properties",
+          "org.freedesktop.DBus.Peer"
+        ]}}
     ]
 
     {reply, state} = make_reply(msg, "a{sv}", [props], state)

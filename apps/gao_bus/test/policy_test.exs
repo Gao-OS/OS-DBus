@@ -19,6 +19,7 @@ defmodule GaoBus.PolicyTest do
       catch
         :exit, _ -> :ok
       end
+
       File.rm(socket_path)
     end)
 
@@ -87,9 +88,16 @@ defmodule GaoBus.PolicyTest do
     test "superuser can send anything" do
       Capability.grant(":1.su", {:all, :all})
       creds = %{unique_name: ":1.su"}
-      info = %{type: :method_call, destination: "com.secret.Service",
-               interface: "com.secret.Iface", member: "DoStuff",
-               sender: ":1.su", path: "/"}
+
+      info = %{
+        type: :method_call,
+        destination: "com.secret.Service",
+        interface: "com.secret.Iface",
+        member: "DoStuff",
+        sender: ":1.su",
+        path: "/"
+      }
+
       assert :allow = Capability.check_send(creds, info)
 
       Capability.peer_disconnected(":1.su")
@@ -97,43 +105,80 @@ defmodule GaoBus.PolicyTest do
 
     test "messages to bus are always allowed" do
       creds = %{unique_name: ":1.nobody"}
-      info = %{type: :method_call, destination: "org.freedesktop.DBus",
-               interface: "org.freedesktop.DBus", member: "Hello",
-               sender: ":1.nobody", path: "/"}
+
+      info = %{
+        type: :method_call,
+        destination: "org.freedesktop.DBus",
+        interface: "org.freedesktop.DBus",
+        member: "Hello",
+        sender: ":1.nobody",
+        path: "/"
+      }
+
       assert :allow = Capability.check_send(creds, info)
     end
 
     test "method returns are always allowed" do
       creds = %{unique_name: ":1.nobody"}
-      info = %{type: :method_return, destination: ":1.2",
-               interface: nil, member: nil,
-               sender: ":1.nobody", path: nil}
+
+      info = %{
+        type: :method_return,
+        destination: ":1.2",
+        interface: nil,
+        member: nil,
+        sender: ":1.nobody",
+        path: nil
+      }
+
       assert :allow = Capability.check_send(creds, info)
     end
 
     test "send with :any capability allows all" do
       Capability.grant(":1.any_send", {:send, :any})
       creds = %{unique_name: ":1.any_send"}
-      info = %{type: :method_call, destination: "com.example.Foo",
-               interface: "com.example.Foo", member: "Bar",
-               sender: ":1.any_send", path: "/"}
+
+      info = %{
+        type: :method_call,
+        destination: "com.example.Foo",
+        interface: "com.example.Foo",
+        member: "Bar",
+        sender: ":1.any_send",
+        path: "/"
+      }
+
       assert :allow = Capability.check_send(creds, info)
 
       Capability.peer_disconnected(":1.any_send")
     end
 
     test "specific call capability works" do
-      Capability.grant(":1.specific", {:call, {"com.example.Svc", "com.example.Iface", "AllowedMethod"}})
+      Capability.grant(
+        ":1.specific",
+        {:call, {"com.example.Svc", "com.example.Iface", "AllowedMethod"}}
+      )
+
       creds = %{unique_name: ":1.specific"}
 
-      allowed = %{type: :method_call, destination: "com.example.Svc",
-                   interface: "com.example.Iface", member: "AllowedMethod",
-                   sender: ":1.specific", path: "/"}
+      allowed = %{
+        type: :method_call,
+        destination: "com.example.Svc",
+        interface: "com.example.Iface",
+        member: "AllowedMethod",
+        sender: ":1.specific",
+        path: "/"
+      }
+
       assert :allow = Capability.check_send(creds, allowed)
 
-      denied = %{type: :method_call, destination: "com.example.Svc",
-                  interface: "com.example.Iface", member: "DeniedMethod",
-                  sender: ":1.specific", path: "/"}
+      denied = %{
+        type: :method_call,
+        destination: "com.example.Svc",
+        interface: "com.example.Iface",
+        member: "DeniedMethod",
+        sender: ":1.specific",
+        path: "/"
+      }
+
       assert {:deny, _} = Capability.check_send(creds, denied)
 
       Capability.peer_disconnected(":1.specific")

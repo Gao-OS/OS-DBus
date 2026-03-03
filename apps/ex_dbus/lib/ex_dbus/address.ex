@@ -45,9 +45,14 @@ defmodule ExDBus.Address do
   defp parse_single(addr) do
     case String.split(addr, ":", parts: 2) do
       [transport, params_str] ->
-        transport_atom = to_transport_atom(transport)
-        params = parse_params(params_str)
-        {:ok, {transport_atom, params}}
+        case to_transport_atom(transport) do
+          {:error, _} = error ->
+            error
+
+          transport_atom ->
+            params = parse_params(params_str)
+            {:ok, {transport_atom, params}}
+        end
 
       _ ->
         {:error, {:invalid_address_format, addr}}
@@ -102,7 +107,7 @@ defmodule ExDBus.Address do
     String.to_existing_atom(transport)
   end
 
-  defp to_transport_atom(transport), do: String.to_atom(transport)
+  defp to_transport_atom(transport), do: {:error, {:unknown_transport, transport}}
 
   defp parse_params(params_str) do
     params_str

@@ -28,7 +28,9 @@ defmodule ExDBus.Transport.UnixSocketTest do
   describe "connect/2" do
     test "returns error for nonexistent socket" do
       assert {:error, {:connect_failed, _reason, _path}} =
-               UnixSocket.connect("unix:path=/tmp/nonexistent_dbus_test_socket_#{System.unique_integer()}")
+               UnixSocket.connect(
+                 "unix:path=/tmp/nonexistent_dbus_test_socket_#{System.unique_integer()}"
+               )
     end
   end
 end

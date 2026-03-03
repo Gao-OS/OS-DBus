@@ -41,9 +41,11 @@ defmodule GaoBus.MatchRulesTest do
     end
 
     test "parses multiple filters" do
-      assert {:ok, rule} = MatchRules.parse(
-        "type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged'"
-      )
+      assert {:ok, rule} =
+               MatchRules.parse(
+                 "type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged'"
+               )
+
       assert rule.type == :signal
       assert rule.sender == "org.freedesktop.DBus"
       assert rule.interface == "org.freedesktop.DBus"
@@ -262,15 +264,16 @@ defmodule GaoBus.MatchRulesTest do
 
     test "arg0 filter matches first body element" do
       {:ok, rule} = MatchRules.parse("arg0='hello'")
-      signal = Message.signal("/test", "com.example.Test", "Foo",
-        signature: "s", body: ["hello"])
+      signal = Message.signal("/test", "com.example.Test", "Foo", signature: "s", body: ["hello"])
       assert MatchRules.matches?(rule, signal)
     end
 
     test "arg0 filter rejects non-matching first body element" do
       {:ok, rule} = MatchRules.parse("arg0='hello'")
-      signal = Message.signal("/test", "com.example.Test", "Foo",
-        signature: "s", body: ["goodbye"])
+
+      signal =
+        Message.signal("/test", "com.example.Test", "Foo", signature: "s", body: ["goodbye"])
+
       refute MatchRules.matches?(rule, signal)
     end
 
@@ -288,29 +291,43 @@ defmodule GaoBus.MatchRulesTest do
 
     test "arg1 filter matches second body element" do
       {:ok, rule} = MatchRules.parse("arg1='world'")
-      signal = Message.signal("/test", "com.example.Test", "Foo",
-        signature: "ss", body: ["hello", "world"])
+
+      signal =
+        Message.signal("/test", "com.example.Test", "Foo",
+          signature: "ss",
+          body: ["hello", "world"]
+        )
+
       assert MatchRules.matches?(rule, signal)
     end
 
     test "arg0path matches exact path" do
       {:ok, rule} = MatchRules.parse("arg0path='/com/example'")
-      signal = Message.signal("/test", "com.example.Test", "Foo",
-        signature: "s", body: ["/com/example"])
+
+      signal =
+        Message.signal("/test", "com.example.Test", "Foo", signature: "s", body: ["/com/example"])
+
       assert MatchRules.matches?(rule, signal)
     end
 
     test "arg0path matches child path" do
       {:ok, rule} = MatchRules.parse("arg0path='/com/example'")
-      signal = Message.signal("/test", "com.example.Test", "Foo",
-        signature: "s", body: ["/com/example/Sub"])
+
+      signal =
+        Message.signal("/test", "com.example.Test", "Foo",
+          signature: "s",
+          body: ["/com/example/Sub"]
+        )
+
       assert MatchRules.matches?(rule, signal)
     end
 
     test "arg0path rejects non-matching path" do
       {:ok, rule} = MatchRules.parse("arg0path='/com/example'")
-      signal = Message.signal("/test", "com.example.Test", "Foo",
-        signature: "s", body: ["/com/other"])
+
+      signal =
+        Message.signal("/test", "com.example.Test", "Foo", signature: "s", body: ["/com/other"])
+
       refute MatchRules.matches?(rule, signal)
     end
 
@@ -321,9 +338,10 @@ defmodule GaoBus.MatchRulesTest do
     end
 
     test "compound rule matches all fields" do
-      {:ok, rule} = MatchRules.parse(
-        "type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged'"
-      )
+      {:ok, rule} =
+        MatchRules.parse(
+          "type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged'"
+        )
 
       signal = %Message{
         type: :signal,
@@ -340,9 +358,8 @@ defmodule GaoBus.MatchRulesTest do
     end
 
     test "compound rule rejects when one field does not match" do
-      {:ok, rule} = MatchRules.parse(
-        "type='signal',sender='org.freedesktop.DBus',member='NameOwnerChanged'"
-      )
+      {:ok, rule} =
+        MatchRules.parse("type='signal',sender='org.freedesktop.DBus',member='NameOwnerChanged'")
 
       signal = %Message{
         type: :signal,
@@ -359,12 +376,20 @@ defmodule GaoBus.MatchRulesTest do
     test "multiple arg filters must all match" do
       {:ok, rule} = MatchRules.parse("arg0='hello',arg1='world'")
 
-      signal_match = Message.signal("/test", "com.example.Test", "Foo",
-        signature: "ss", body: ["hello", "world"])
+      signal_match =
+        Message.signal("/test", "com.example.Test", "Foo",
+          signature: "ss",
+          body: ["hello", "world"]
+        )
+
       assert MatchRules.matches?(rule, signal_match)
 
-      signal_partial = Message.signal("/test", "com.example.Test", "Foo",
-        signature: "ss", body: ["hello", "nope"])
+      signal_partial =
+        Message.signal("/test", "com.example.Test", "Foo",
+          signature: "ss",
+          body: ["hello", "nope"]
+        )
+
       refute MatchRules.matches?(rule, signal_partial)
     end
   end
@@ -403,6 +428,7 @@ defmodule GaoBus.MatchRulesTest do
 
     test "remove_match/2 returns error for non-existent rule" do
       peer = spawn_peer()
+
       assert {:error, "org.freedesktop.DBus.Error.MatchRuleNotFound"} =
                MatchRules.remove_match(peer, "type='signal',member='NeverAdded'")
     end

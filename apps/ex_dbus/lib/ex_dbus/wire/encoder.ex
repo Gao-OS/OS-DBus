@@ -127,7 +127,9 @@ defmodule ExDBus.Wire.Encoder do
   end
 
   defp encode_impl(value, :object_path, endianness, offset) do
-    Types.valid?(:object_path, value) || raise ArgumentError, "Invalid object_path: #{inspect(value)}"
+    Types.valid?(:object_path, value) ||
+      raise ArgumentError, "Invalid object_path: #{inspect(value)}"
+
     {pad, _} = align(offset, 4)
     len = byte_size(value)
     [pad, encode_uint32(len, endianness), value, <<0>>]
@@ -185,7 +187,7 @@ defmodule ExDBus.Wire.Encoder do
   end
 
   defp encode_impl(value, {:dict_entry, key_type, val_type}, endianness, offset) do
-    is_tuple(value) and tuple_size(value) == 2 ||
+    (is_tuple(value) and tuple_size(value) == 2) ||
       raise ArgumentError, "Dict entry must be a 2-tuple, got: #{inspect(value)}"
 
     {pad, pad_len} = align(offset, 8)

@@ -1,5 +1,6 @@
 defmodule GaoBusWebWeb.DashboardLive do
   use GaoBusWebWeb, :live_view
+  @moduledoc "Real-time bus health dashboard showing peers, names, and message throughput."
 
   @impl true
   def mount(_params, _session, socket) do
@@ -86,8 +87,12 @@ defmodule GaoBusWebWeb.DashboardLive do
               <tr :for={name <- @names}>
                 <td class="font-mono text-sm">{name}</td>
                 <td>
-                  <span :if={String.starts_with?(name, ":")} class="badge badge-info badge-sm">unique</span>
-                  <span :if={!String.starts_with?(name, ":")} class="badge badge-success badge-sm">well-known</span>
+                  <span :if={String.starts_with?(name, ":")} class="badge badge-info badge-sm">
+                    unique
+                  </span>
+                  <span :if={!String.starts_with?(name, ":")} class="badge badge-success badge-sm">
+                    well-known
+                  </span>
                 </td>
               </tr>
             </tbody>

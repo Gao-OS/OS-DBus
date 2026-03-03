@@ -101,7 +101,8 @@ defmodule ExDBus.Connection do
   @doc """
   Get the current connection state.
   """
-  @spec get_state(GenServer.server()) :: :disconnected | :connecting | :authenticating | :connected
+  @spec get_state(GenServer.server()) ::
+          :disconnected | :connecting | :authenticating | :connected
   def get_state(conn) do
     GenServer.call(conn, :get_state)
   end
@@ -281,12 +282,7 @@ defmodule ExDBus.Connection do
             state.transport_mod.send(state.transport, "BEGIN\r\n")
             state.transport_mod.set_active(state.transport, true)
 
-            state = %{state |
-              auth_state: auth_state,
-              guid: guid,
-              buffer: rest,
-              state: :connected
-            }
+            state = %{state | auth_state: auth_state, guid: guid, buffer: rest, state: :connected}
 
             notify_owner(state, {:connected, guid})
             {:noreply, state}

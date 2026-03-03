@@ -85,34 +85,36 @@ defmodule ExDBus.ConnectionTest do
       # Start a helper process to handle the server side
       test_pid = self()
 
-      server_task = Task.async(fn ->
-        {:ok, sock} = :gen_tcp.accept(listen, 5_000)
+      server_task =
+        Task.async(fn ->
+          {:ok, sock} = :gen_tcp.accept(listen, 5_000)
 
-        # Read null byte
-        {:ok, <<0>>} = :gen_tcp.recv(sock, 1, 5_000)
+          # Read null byte
+          {:ok, <<0>>} = :gen_tcp.recv(sock, 1, 5_000)
 
-        # Read AUTH command
-        {:ok, data} = :gen_tcp.recv(sock, 0, 5_000)
-        send(test_pid, {:auth_received, data})
+          # Read AUTH command
+          {:ok, data} = :gen_tcp.recv(sock, 0, 5_000)
+          send(test_pid, {:auth_received, data})
 
-        # Send OK response
-        :gen_tcp.send(sock, "OK test_guid_123\r\n")
+          # Send OK response
+          :gen_tcp.send(sock, "OK test_guid_123\r\n")
 
-        # Read BEGIN
-        {:ok, begin_data} = :gen_tcp.recv(sock, 0, 5_000)
-        send(test_pid, {:begin_received, begin_data})
+          # Read BEGIN
+          {:ok, begin_data} = :gen_tcp.recv(sock, 0, 5_000)
+          send(test_pid, {:begin_received, begin_data})
 
-        # Keep socket open
-        Process.sleep(1000)
-        :gen_tcp.close(sock)
-        :gen_tcp.close(listen)
-      end)
+          # Keep socket open
+          Process.sleep(1000)
+          :gen_tcp.close(sock)
+          :gen_tcp.close(listen)
+        end)
 
-      {:ok, conn} = Connection.start_link(
-        address: "tcp:host=localhost,port=#{port}",
-        auth_mod: MockAuth,
-        owner: self()
-      )
+      {:ok, conn} =
+        Connection.start_link(
+          address: "tcp:host=localhost,port=#{port}",
+          auth_mod: MockAuth,
+          owner: self()
+        )
 
       # Should receive auth command
       assert_receive {:auth_received, auth_data}, 5_000
@@ -140,22 +142,24 @@ defmodule ExDBus.ConnectionTest do
       {:ok, listen} = :gen_tcp.listen(0, [:binary, active: false, reuseaddr: true])
       {:ok, port} = :inet.port(listen)
 
-      server_task = Task.async(fn ->
-        {:ok, sock} = :gen_tcp.accept(listen, 5_000)
-        {:ok, <<0>>} = :gen_tcp.recv(sock, 1, 5_000)
-        {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
-        :gen_tcp.send(sock, "OK guid\r\n")
-        {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
-        Process.sleep(1000)
-        :gen_tcp.close(sock)
-        :gen_tcp.close(listen)
-      end)
+      server_task =
+        Task.async(fn ->
+          {:ok, sock} = :gen_tcp.accept(listen, 5_000)
+          {:ok, <<0>>} = :gen_tcp.recv(sock, 1, 5_000)
+          {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
+          :gen_tcp.send(sock, "OK guid\r\n")
+          {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
+          Process.sleep(1000)
+          :gen_tcp.close(sock)
+          :gen_tcp.close(listen)
+        end)
 
-      {:ok, conn} = Connection.start_link(
-        address: "tcp:host=localhost,port=#{port}",
-        auth_mod: MockAuth,
-        owner: self()
-      )
+      {:ok, conn} =
+        Connection.start_link(
+          address: "tcp:host=localhost,port=#{port}",
+          auth_mod: MockAuth,
+          owner: self()
+        )
 
       assert_receive {:ex_dbus, {:connected, _}}, 5_000
       assert Connection.get_state(conn) == :connected
@@ -173,19 +177,21 @@ defmodule ExDBus.ConnectionTest do
       {:ok, port} = :inet.port(listen)
 
       # Don't accept — connection will fail or timeout
-      server_task = Task.async(fn ->
-        {:ok, sock} = :gen_tcp.accept(listen, 5_000)
-        # Don't send OK — leave in authenticating state
-        Process.sleep(2000)
-        :gen_tcp.close(sock)
-        :gen_tcp.close(listen)
-      end)
+      server_task =
+        Task.async(fn ->
+          {:ok, sock} = :gen_tcp.accept(listen, 5_000)
+          # Don't send OK — leave in authenticating state
+          Process.sleep(2000)
+          :gen_tcp.close(sock)
+          :gen_tcp.close(listen)
+        end)
 
-      {:ok, conn} = Connection.start_link(
-        address: "tcp:host=localhost,port=#{port}",
-        auth_mod: MockAuth,
-        owner: self()
-      )
+      {:ok, conn} =
+        Connection.start_link(
+          address: "tcp:host=localhost,port=#{port}",
+          auth_mod: MockAuth,
+          owner: self()
+        )
 
       # Give it a moment but don't wait for auth to complete
       Process.sleep(100)
@@ -201,41 +207,45 @@ defmodule ExDBus.ConnectionTest do
       {:ok, listen} = :gen_tcp.listen(0, [:binary, active: false, reuseaddr: true])
       {:ok, port} = :inet.port(listen)
 
-      server_task = Task.async(fn ->
-        {:ok, sock} = :gen_tcp.accept(listen, 5_000)
+      server_task =
+        Task.async(fn ->
+          {:ok, sock} = :gen_tcp.accept(listen, 5_000)
 
-        # Auth handshake
-        {:ok, <<0>>} = :gen_tcp.recv(sock, 1, 5_000)
-        {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
-        :gen_tcp.send(sock, "OK guid123\r\n")
-        {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
+          # Auth handshake
+          {:ok, <<0>>} = :gen_tcp.recv(sock, 1, 5_000)
+          {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
+          :gen_tcp.send(sock, "OK guid123\r\n")
+          {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
 
-        # Now in binary mode — receive the method_call
-        {:ok, msg_data} = :gen_tcp.recv(sock, 0, 5_000)
+          # Now in binary mode — receive the method_call
+          {:ok, msg_data} = :gen_tcp.recv(sock, 0, 5_000)
 
-        # Decode it
-        {:ok, call_msg, _rest} = Message.decode_message(msg_data)
+          # Decode it
+          {:ok, call_msg, _rest} = Message.decode_message(msg_data)
 
-        # Send a method_return
-        reply = Message.method_return(call_msg.serial, serial: 1, signature: "s", body: ["world"])
-        reply_data = Message.encode_message(reply)
-        :gen_tcp.send(sock, reply_data)
+          # Send a method_return
+          reply =
+            Message.method_return(call_msg.serial, serial: 1, signature: "s", body: ["world"])
 
-        Process.sleep(500)
-        :gen_tcp.close(sock)
-        :gen_tcp.close(listen)
-      end)
+          reply_data = Message.encode_message(reply)
+          :gen_tcp.send(sock, reply_data)
 
-      {:ok, conn} = Connection.start_link(
-        address: "tcp:host=localhost,port=#{port}",
-        auth_mod: MockAuth,
-        owner: self()
-      )
+          Process.sleep(500)
+          :gen_tcp.close(sock)
+          :gen_tcp.close(listen)
+        end)
+
+      {:ok, conn} =
+        Connection.start_link(
+          address: "tcp:host=localhost,port=#{port}",
+          auth_mod: MockAuth,
+          owner: self()
+        )
 
       assert_receive {:ex_dbus, {:connected, _}}, 5_000
 
-      msg = Message.method_call("/test", "org.test.Iface", "Hello",
-        signature: "s", body: ["hello"])
+      msg =
+        Message.method_call("/test", "org.test.Iface", "Hello", signature: "s", body: ["hello"])
 
       {:ok, reply} = Connection.call(conn, msg, 5_000)
       assert reply.type == :method_return
@@ -253,30 +263,32 @@ defmodule ExDBus.ConnectionTest do
 
       test_pid = self()
 
-      server_task = Task.async(fn ->
-        {:ok, sock} = :gen_tcp.accept(listen, 5_000)
+      server_task =
+        Task.async(fn ->
+          {:ok, sock} = :gen_tcp.accept(listen, 5_000)
 
-        # Auth handshake
-        {:ok, <<0>>} = :gen_tcp.recv(sock, 1, 5_000)
-        {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
-        :gen_tcp.send(sock, "OK guid\r\n")
-        {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
+          # Auth handshake
+          {:ok, <<0>>} = :gen_tcp.recv(sock, 1, 5_000)
+          {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
+          :gen_tcp.send(sock, "OK guid\r\n")
+          {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
 
-        # Receive the signal
-        {:ok, msg_data} = :gen_tcp.recv(sock, 0, 5_000)
-        {:ok, signal_msg, _} = Message.decode_message(msg_data)
-        send(test_pid, {:received_signal, signal_msg})
+          # Receive the signal
+          {:ok, msg_data} = :gen_tcp.recv(sock, 0, 5_000)
+          {:ok, signal_msg, _} = Message.decode_message(msg_data)
+          send(test_pid, {:received_signal, signal_msg})
 
-        Process.sleep(500)
-        :gen_tcp.close(sock)
-        :gen_tcp.close(listen)
-      end)
+          Process.sleep(500)
+          :gen_tcp.close(sock)
+          :gen_tcp.close(listen)
+        end)
 
-      {:ok, conn} = Connection.start_link(
-        address: "tcp:host=localhost,port=#{port}",
-        auth_mod: MockAuth,
-        owner: self()
-      )
+      {:ok, conn} =
+        Connection.start_link(
+          address: "tcp:host=localhost,port=#{port}",
+          auth_mod: MockAuth,
+          owner: self()
+        )
 
       assert_receive {:ex_dbus, {:connected, _}}, 5_000
 
@@ -297,30 +309,37 @@ defmodule ExDBus.ConnectionTest do
       {:ok, listen} = :gen_tcp.listen(0, [:binary, active: false, reuseaddr: true])
       {:ok, port} = :inet.port(listen)
 
-      server_task = Task.async(fn ->
-        {:ok, sock} = :gen_tcp.accept(listen, 5_000)
+      server_task =
+        Task.async(fn ->
+          {:ok, sock} = :gen_tcp.accept(listen, 5_000)
 
-        # Auth handshake
-        {:ok, <<0>>} = :gen_tcp.recv(sock, 1, 5_000)
-        {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
-        :gen_tcp.send(sock, "OK guid\r\n")
-        {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
+          # Auth handshake
+          {:ok, <<0>>} = :gen_tcp.recv(sock, 1, 5_000)
+          {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
+          :gen_tcp.send(sock, "OK guid\r\n")
+          {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
 
-        # Send a signal from server to client
-        signal = Message.signal("/org/bus", "org.freedesktop.DBus", "NameAcquired",
-          serial: 1, signature: "s", body: [":1.1"])
-        :gen_tcp.send(sock, Message.encode_message(signal))
+          # Send a signal from server to client
+          signal =
+            Message.signal("/org/bus", "org.freedesktop.DBus", "NameAcquired",
+              serial: 1,
+              signature: "s",
+              body: [":1.1"]
+            )
 
-        Process.sleep(500)
-        :gen_tcp.close(sock)
-        :gen_tcp.close(listen)
-      end)
+          :gen_tcp.send(sock, Message.encode_message(signal))
 
-      {:ok, conn} = Connection.start_link(
-        address: "tcp:host=localhost,port=#{port}",
-        auth_mod: MockAuth,
-        owner: self()
-      )
+          Process.sleep(500)
+          :gen_tcp.close(sock)
+          :gen_tcp.close(listen)
+        end)
+
+      {:ok, conn} =
+        Connection.start_link(
+          address: "tcp:host=localhost,port=#{port}",
+          auth_mod: MockAuth,
+          owner: self()
+        )
 
       assert_receive {:ex_dbus, {:connected, _}}, 5_000
 
@@ -343,28 +362,30 @@ defmodule ExDBus.ConnectionTest do
 
       test_pid = self()
 
-      server_task = Task.async(fn ->
-        {:ok, sock} = :gen_tcp.accept(listen, 5_000)
+      server_task =
+        Task.async(fn ->
+          {:ok, sock} = :gen_tcp.accept(listen, 5_000)
 
-        # Auth handshake
-        {:ok, <<0>>} = :gen_tcp.recv(sock, 1, 5_000)
-        {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
-        :gen_tcp.send(sock, "OK guid\r\n")
-        {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
+          # Auth handshake
+          {:ok, <<0>>} = :gen_tcp.recv(sock, 1, 5_000)
+          {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
+          :gen_tcp.send(sock, "OK guid\r\n")
+          {:ok, _} = :gen_tcp.recv(sock, 0, 5_000)
 
-        # Receive signals — may arrive in one or two TCP reads
-        recv_messages(sock, test_pid, 2, <<>>)
+          # Receive signals — may arrive in one or two TCP reads
+          recv_messages(sock, test_pid, 2, <<>>)
 
-        Process.sleep(500)
-        :gen_tcp.close(sock)
-        :gen_tcp.close(listen)
-      end)
+          Process.sleep(500)
+          :gen_tcp.close(sock)
+          :gen_tcp.close(listen)
+        end)
 
-      {:ok, conn} = Connection.start_link(
-        address: "tcp:host=localhost,port=#{port}",
-        auth_mod: MockAuth,
-        owner: self()
-      )
+      {:ok, conn} =
+        Connection.start_link(
+          address: "tcp:host=localhost,port=#{port}",
+          auth_mod: MockAuth,
+          owner: self()
+        )
 
       assert_receive {:ex_dbus, {:connected, _}}, 5_000
 

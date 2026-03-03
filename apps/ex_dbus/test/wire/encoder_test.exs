@@ -199,7 +199,8 @@ defmodule ExDBus.Wire.EncoderTest do
       # This is complex, just verify it encodes without error and produces reasonable output
       binary = result
       assert is_binary(binary)
-      assert byte_size(binary) > 4  # At least length prefix
+      # At least length prefix
+      assert byte_size(binary) > 4
     end
   end
 

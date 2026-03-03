@@ -21,8 +21,13 @@ defmodule GaoConfig.DBusInterfaceTest do
     test "returns value for existing key" do
       GaoConfig.ConfigStore.set("test", "key1", "value1")
 
-      m = msg("/org/gaoos/Config1", "org.gaoos.Config1", "Get",
-        serial: 1, sender: ":1.1", signature: "ss", body: ["test", "key1"])
+      m =
+        msg("/org/gaoos/Config1", "org.gaoos.Config1", "Get",
+          serial: 1,
+          sender: ":1.1",
+          signature: "ss",
+          body: ["test", "key1"]
+        )
 
       assert {:ok, reply} = Object.dispatch(m, DBusInterface)
       assert reply.type == :method_return
@@ -30,8 +35,13 @@ defmodule GaoConfig.DBusInterfaceTest do
     end
 
     test "returns error for missing key" do
-      m = msg("/org/gaoos/Config1", "org.gaoos.Config1", "Get",
-        serial: 1, sender: ":1.1", signature: "ss", body: ["test", "missing"])
+      m =
+        msg("/org/gaoos/Config1", "org.gaoos.Config1", "Get",
+          serial: 1,
+          sender: ":1.1",
+          signature: "ss",
+          body: ["test", "missing"]
+        )
 
       assert {:error, error} = Object.dispatch(m, DBusInterface)
       assert error.type == :error
@@ -41,8 +51,13 @@ defmodule GaoConfig.DBusInterfaceTest do
 
   describe "Object.dispatch — Set" do
     test "sets a value" do
-      m = msg("/org/gaoos/Config1", "org.gaoos.Config1", "Set",
-        serial: 1, sender: ":1.1", signature: "sss", body: ["net", "host", "gaoos"])
+      m =
+        msg("/org/gaoos/Config1", "org.gaoos.Config1", "Set",
+          serial: 1,
+          sender: ":1.1",
+          signature: "sss",
+          body: ["net", "host", "gaoos"]
+        )
 
       assert {:ok, reply} = Object.dispatch(m, DBusInterface)
       assert reply.type == :method_return
@@ -55,8 +70,13 @@ defmodule GaoConfig.DBusInterfaceTest do
     test "deletes a key" do
       GaoConfig.ConfigStore.set("test", "delme", "value")
 
-      m = msg("/org/gaoos/Config1", "org.gaoos.Config1", "Delete",
-        serial: 1, sender: ":1.1", signature: "ss", body: ["test", "delme"])
+      m =
+        msg("/org/gaoos/Config1", "org.gaoos.Config1", "Delete",
+          serial: 1,
+          sender: ":1.1",
+          signature: "ss",
+          body: ["test", "delme"]
+        )
 
       assert {:ok, _reply} = Object.dispatch(m, DBusInterface)
       assert {:error, :not_found} = GaoConfig.ConfigStore.get("test", "delme")
@@ -68,8 +88,13 @@ defmodule GaoConfig.DBusInterfaceTest do
       GaoConfig.ConfigStore.set("sec", "a", "1")
       GaoConfig.ConfigStore.set("sec", "b", "2")
 
-      m = msg("/org/gaoos/Config1", "org.gaoos.Config1", "List",
-        serial: 1, sender: ":1.1", signature: "s", body: ["sec"])
+      m =
+        msg("/org/gaoos/Config1", "org.gaoos.Config1", "List",
+          serial: 1,
+          sender: ":1.1",
+          signature: "s",
+          body: ["sec"]
+        )
 
       assert {:ok, reply} = Object.dispatch(m, DBusInterface)
       assert reply.signature == "a{ss}"
@@ -84,8 +109,8 @@ defmodule GaoConfig.DBusInterfaceTest do
       GaoConfig.ConfigStore.set("net", "x", "1")
       GaoConfig.ConfigStore.set("audio", "y", "2")
 
-      m = msg("/org/gaoos/Config1", "org.gaoos.Config1", "ListSections",
-        serial: 1, sender: ":1.1")
+      m =
+        msg("/org/gaoos/Config1", "org.gaoos.Config1", "ListSections", serial: 1, sender: ":1.1")
 
       assert {:ok, reply} = Object.dispatch(m, DBusInterface)
       [sections] = reply.body
@@ -96,8 +121,7 @@ defmodule GaoConfig.DBusInterfaceTest do
 
   describe "Object.dispatch — GetVersion" do
     test "returns version" do
-      m = msg("/org/gaoos/Config1", "org.gaoos.Config1", "GetVersion",
-        serial: 1, sender: ":1.1")
+      m = msg("/org/gaoos/Config1", "org.gaoos.Config1", "GetVersion", serial: 1, sender: ":1.1")
 
       assert {:ok, reply} = Object.dispatch(m, DBusInterface)
       assert reply.body == ["0.1.0"]
@@ -106,8 +130,7 @@ defmodule GaoConfig.DBusInterfaceTest do
 
   describe "Object.dispatch — unknown method" do
     test "returns error for unknown method" do
-      m = msg("/org/gaoos/Config1", "org.gaoos.Config1", "Bogus",
-        serial: 1, sender: ":1.1")
+      m = msg("/org/gaoos/Config1", "org.gaoos.Config1", "Bogus", serial: 1, sender: ":1.1")
 
       assert {:error, error} = Object.dispatch(m, DBusInterface)
       assert error.error_name == "org.freedesktop.DBus.Error.UnknownMethod"
@@ -116,8 +139,11 @@ defmodule GaoConfig.DBusInterfaceTest do
 
   describe "Object.dispatch — Introspect" do
     test "returns introspection XML with Config1 interface" do
-      m = msg("/org/gaoos/Config1", "org.freedesktop.DBus.Introspectable", "Introspect",
-        serial: 1, sender: ":1.1")
+      m =
+        msg("/org/gaoos/Config1", "org.freedesktop.DBus.Introspectable", "Introspect",
+          serial: 1,
+          sender: ":1.1"
+        )
 
       assert {:ok, reply} = Object.dispatch(m, DBusInterface)
       [xml] = reply.body
@@ -130,18 +156,26 @@ defmodule GaoConfig.DBusInterfaceTest do
 
   describe "Object.dispatch — Properties" do
     test "Get returns Version property" do
-      m = msg("/org/gaoos/Config1", "org.freedesktop.DBus.Properties", "Get",
-        serial: 1, sender: ":1.1", signature: "ss",
-        body: ["org.gaoos.Config1", "Version"])
+      m =
+        msg("/org/gaoos/Config1", "org.freedesktop.DBus.Properties", "Get",
+          serial: 1,
+          sender: ":1.1",
+          signature: "ss",
+          body: ["org.gaoos.Config1", "Version"]
+        )
 
       assert {:ok, reply} = Object.dispatch(m, DBusInterface)
       assert reply.body == [{"s", "0.1.0"}]
     end
 
     test "Get returns error for unknown property" do
-      m = msg("/org/gaoos/Config1", "org.freedesktop.DBus.Properties", "Get",
-        serial: 1, sender: ":1.1", signature: "ss",
-        body: ["org.gaoos.Config1", "Bogus"])
+      m =
+        msg("/org/gaoos/Config1", "org.freedesktop.DBus.Properties", "Get",
+          serial: 1,
+          sender: ":1.1",
+          signature: "ss",
+          body: ["org.gaoos.Config1", "Bogus"]
+        )
 
       assert {:error, error} = Object.dispatch(m, DBusInterface)
       assert error.error_name == "org.freedesktop.DBus.Error.UnknownProperty"

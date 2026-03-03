@@ -1,5 +1,6 @@
 defmodule GaoBusWebWeb.Telemetry do
   use Supervisor
+  @moduledoc false
   import Telemetry.Metrics
 
   def start_link(arg) do

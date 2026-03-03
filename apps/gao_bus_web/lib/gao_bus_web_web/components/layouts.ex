@@ -38,8 +38,7 @@ defmodule GaoBusWebWeb.Layouts do
     <header class="navbar bg-base-200 px-4 sm:px-6 lg:px-8 border-b border-base-300">
       <div class="flex-1">
         <a href="/" class="flex items-center gap-2 font-bold text-lg">
-          <.icon name="hero-cpu-chip" class="size-6 text-primary" />
-          GaoBus Monitor
+          <.icon name="hero-cpu-chip" class="size-6 text-primary" /> GaoBus Monitor
         </a>
       </div>
       <div class="flex-none">

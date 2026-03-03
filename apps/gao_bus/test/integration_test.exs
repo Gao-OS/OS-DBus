@@ -30,19 +30,23 @@ defmodule GaoBus.IntegrationTest do
   end
 
   defp connect_client(socket_path) do
-    {:ok, conn} = Connection.start_link(
-      address: "unix:path=#{socket_path}",
-      auth_mod: ExDBus.Auth.Anonymous,
-      owner: self()
-    )
+    {:ok, conn} =
+      Connection.start_link(
+        address: "unix:path=#{socket_path}",
+        auth_mod: ExDBus.Auth.Anonymous,
+        owner: self()
+      )
 
     assert_receive {:ex_dbus, {:connected, _guid}}, 5_000
     conn
   end
 
   defp call_hello(conn) do
-    msg = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "Hello",
-      destination: "org.freedesktop.DBus")
+    msg =
+      Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "Hello",
+        destination: "org.freedesktop.DBus"
+      )
+
     {:ok, reply} = Connection.call(conn, msg, 5_000)
     assert reply.type == :method_return
     [unique_name] = reply.body
@@ -88,8 +92,11 @@ defmodule GaoBus.IntegrationTest do
       conn = connect_client(path)
       name = call_hello(conn)
 
-      msg = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "ListNames",
-        destination: "org.freedesktop.DBus")
+      msg =
+        Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "ListNames",
+          destination: "org.freedesktop.DBus"
+        )
+
       {:ok, reply} = Connection.call(conn, msg, 5_000)
       [names] = reply.body
 
@@ -106,28 +113,39 @@ defmodule GaoBus.IntegrationTest do
       _name = call_hello(conn)
 
       # RequestName
-      req = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "RequestName",
-        destination: "org.freedesktop.DBus",
-        signature: "su",
-        body: ["com.example.Test", 0])
+      req =
+        Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "RequestName",
+          destination: "org.freedesktop.DBus",
+          signature: "su",
+          body: ["com.example.Test", 0]
+        )
+
       {:ok, reply} = Connection.call(conn, req, 5_000)
-      assert reply.body == [1]  # DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
+      # DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
+      assert reply.body == [1]
 
       # GetNameOwner
-      get = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "GetNameOwner",
-        destination: "org.freedesktop.DBus",
-        signature: "s",
-        body: ["com.example.Test"])
+      get =
+        Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "GetNameOwner",
+          destination: "org.freedesktop.DBus",
+          signature: "s",
+          body: ["com.example.Test"]
+        )
+
       {:ok, reply} = Connection.call(conn, get, 5_000)
       assert reply.type == :method_return
 
       # ReleaseName
-      rel = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "ReleaseName",
-        destination: "org.freedesktop.DBus",
-        signature: "s",
-        body: ["com.example.Test"])
+      rel =
+        Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "ReleaseName",
+          destination: "org.freedesktop.DBus",
+          signature: "s",
+          body: ["com.example.Test"]
+        )
+
       {:ok, reply} = Connection.call(conn, rel, 5_000)
-      assert reply.body == [1]  # DBUS_RELEASE_NAME_REPLY_RELEASED
+      # DBUS_RELEASE_NAME_REPLY_RELEASED
+      assert reply.body == [1]
 
       Connection.disconnect(conn)
     end
@@ -141,22 +159,28 @@ defmodule GaoBus.IntegrationTest do
       _name_b = call_hello(conn_b)
 
       # B registers a well-known name
-      req = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "RequestName",
-        destination: "org.freedesktop.DBus",
-        signature: "su",
-        body: ["com.example.Service", 0])
+      req =
+        Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "RequestName",
+          destination: "org.freedesktop.DBus",
+          signature: "su",
+          body: ["com.example.Service", 0]
+        )
+
       {:ok, _} = Connection.call(conn_b, req, 5_000)
 
       # A sends a method_call to B's well-known name (async so we can handle B's response)
-      call_msg = Message.method_call("/com/example/Object", "com.example.Interface", "DoStuff",
-        destination: "com.example.Service",
-        signature: "s",
-        body: ["ping"])
+      call_msg =
+        Message.method_call("/com/example/Object", "com.example.Interface", "DoStuff",
+          destination: "com.example.Service",
+          signature: "s",
+          body: ["ping"]
+        )
 
       # Use Task.async for A's call so test process can receive B's incoming message
-      task = Task.async(fn ->
-        Connection.call(conn_a, call_msg, 10_000)
-      end)
+      task =
+        Task.async(fn ->
+          Connection.call(conn_a, call_msg, 10_000)
+        end)
 
       # B's connection dispatches the method_call to us (the owner)
       # Drain any signals (NameOwnerChanged etc.) until we get the method_call
@@ -165,10 +189,13 @@ defmodule GaoBus.IntegrationTest do
       assert incoming.body == ["ping"]
 
       # Send reply from B
-      reply = Message.method_return(incoming.serial,
-        destination: incoming.sender,
-        signature: "s",
-        body: ["pong"])
+      reply =
+        Message.method_return(incoming.serial,
+          destination: incoming.sender,
+          signature: "s",
+          body: ["pong"]
+        )
+
       Connection.cast(conn_b, reply)
 
       # A should receive the reply
@@ -186,10 +213,13 @@ defmodule GaoBus.IntegrationTest do
       conn = connect_client(path)
       _name = call_hello(conn)
 
-      msg = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "NameHasOwner",
-        destination: "org.freedesktop.DBus",
-        signature: "s",
-        body: ["org.freedesktop.DBus"])
+      msg =
+        Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "NameHasOwner",
+          destination: "org.freedesktop.DBus",
+          signature: "s",
+          body: ["org.freedesktop.DBus"]
+        )
+
       {:ok, reply} = Connection.call(conn, msg, 5_000)
       assert reply.body == [true]
 
@@ -200,10 +230,13 @@ defmodule GaoBus.IntegrationTest do
       conn = connect_client(path)
       _name = call_hello(conn)
 
-      msg = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "NameHasOwner",
-        destination: "org.freedesktop.DBus",
-        signature: "s",
-        body: ["com.does.not.exist"])
+      msg =
+        Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "NameHasOwner",
+          destination: "org.freedesktop.DBus",
+          signature: "s",
+          body: ["com.does.not.exist"]
+        )
+
       {:ok, reply} = Connection.call(conn, msg, 5_000)
       assert reply.body == [false]
 
@@ -217,18 +250,24 @@ defmodule GaoBus.IntegrationTest do
       _name = call_hello(conn)
 
       # AddMatch
-      add = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "AddMatch",
-        destination: "org.freedesktop.DBus",
-        signature: "s",
-        body: ["type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged'"])
+      add =
+        Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "AddMatch",
+          destination: "org.freedesktop.DBus",
+          signature: "s",
+          body: ["type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged'"]
+        )
+
       {:ok, reply} = Connection.call(conn, add, 5_000)
       assert reply.type == :method_return
 
       # RemoveMatch
-      rem_msg = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "RemoveMatch",
-        destination: "org.freedesktop.DBus",
-        signature: "s",
-        body: ["type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged'"])
+      rem_msg =
+        Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "RemoveMatch",
+          destination: "org.freedesktop.DBus",
+          signature: "s",
+          body: ["type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged'"]
+        )
+
       {:ok, reply} = Connection.call(conn, rem_msg, 5_000)
       assert reply.type == :method_return
 
@@ -241,9 +280,14 @@ defmodule GaoBus.IntegrationTest do
       conn = connect_client(path)
       _name = call_hello(conn)
 
-      msg = Message.method_call("/org/freedesktop/DBus",
-        "org.freedesktop.DBus.Introspectable", "Introspect",
-        destination: "org.freedesktop.DBus")
+      msg =
+        Message.method_call(
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus.Introspectable",
+          "Introspect",
+          destination: "org.freedesktop.DBus"
+        )
+
       {:ok, reply} = Connection.call(conn, msg, 5_000)
       assert reply.type == :method_return
       [xml] = reply.body
@@ -269,8 +313,14 @@ defmodule GaoBus.IntegrationTest do
       conn = connect_client(path)
       _name = call_hello(conn)
 
-      msg = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus",
-        "ListActivatableNames", destination: "org.freedesktop.DBus")
+      msg =
+        Message.method_call(
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus",
+          "ListActivatableNames",
+          destination: "org.freedesktop.DBus"
+        )
+
       {:ok, reply} = Connection.call(conn, msg, 5_000)
       assert reply.type == :method_return
       assert reply.body == [[]]

@@ -22,7 +22,9 @@ defmodule GaoBus.PubSub do
   @spec broadcast(term()) :: :ok
   def broadcast(event) do
     case pubsub_name() do
-      nil -> :ok
+      nil ->
+        :ok
+
       name ->
         try do
           Phoenix.PubSub.broadcast(name, @topic, event)

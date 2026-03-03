@@ -129,12 +129,16 @@ defmodule ExDBus.Wire.DecoderTest do
 
     test "decodes struct with multiple elements" do
       bin = encode_to_binary({42, "hello", true}, {:struct, [:int32, :string, :boolean]})
-      assert {:ok, {42, "hello", true}, <<>>} = Decoder.decode(bin, {:struct, [:int32, :string, :boolean]})
+
+      assert {:ok, {42, "hello", true}, <<>>} =
+               Decoder.decode(bin, {:struct, [:int32, :string, :boolean]})
     end
 
     test "decodes struct with nested array" do
       bin = encode_to_binary({42, [1, 2, 3]}, {:struct, [:int32, {:array, :int32}]})
-      assert {:ok, {42, [1, 2, 3]}, <<>>} = Decoder.decode(bin, {:struct, [:int32, {:array, :int32}]})
+
+      assert {:ok, {42, [1, 2, 3]}, <<>>} =
+               Decoder.decode(bin, {:struct, [:int32, {:array, :int32}]})
     end
   end
 
@@ -163,7 +167,9 @@ defmodule ExDBus.Wire.DecoderTest do
       ]
 
       bin = encode_to_binary(entries, {:array, {:dict_entry, :string, :variant}})
-      assert {:ok, decoded, <<>>} = Decoder.decode(bin, {:array, {:dict_entry, :string, :variant}})
+
+      assert {:ok, decoded, <<>>} =
+               Decoder.decode(bin, {:array, {:dict_entry, :string, :variant}})
 
       assert [{"key1", {"i", 42}}, {"key2", {"s", "value"}}] = decoded
     end

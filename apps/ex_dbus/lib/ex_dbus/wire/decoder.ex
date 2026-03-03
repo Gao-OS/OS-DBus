@@ -25,7 +25,11 @@ defmodule ExDBus.Wire.Decoder do
       iex> ExDBus.Wire.Decoder.decode(<<5, 0, 0, 0, "hello", 0>>, :string)
       {:ok, "hello", <<>>}
   """
-  @spec decode(binary(), ExDBus.Wire.Types.dbus_type() | String.t(), ExDBus.Wire.Types.endianness()) ::
+  @spec decode(
+          binary(),
+          ExDBus.Wire.Types.dbus_type() | String.t(),
+          ExDBus.Wire.Types.endianness()
+        ) ::
           {:ok, term(), binary()} | {:error, term()}
   def decode(binary, type, endianness \\ :little) do
     type = normalize_type(type)
@@ -253,6 +257,7 @@ defmodule ExDBus.Wire.Decoder do
 
       # For struct/dict_entry arrays, we need to align to 8 bytes before the first element
       elem_align = Types.alignment(elem_type)
+
       {rest3, offset} =
         if elem_align > 4 do
           padding = rem(elem_align - rem(offset, elem_align), elem_align)

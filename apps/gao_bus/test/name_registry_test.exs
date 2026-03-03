@@ -73,7 +73,9 @@ defmodule GaoBus.NameRegistryTest do
   describe "request_name/4 — basic ownership" do
     test "grants ownership when name is free" do
       peer = spawn_peer()
-      assert {:ok, @name_primary_owner} = NameRegistry.request_name("com.test.Svc", 0, peer, ":1.1")
+
+      assert {:ok, @name_primary_owner} =
+               NameRegistry.request_name("com.test.Svc", 0, peer, ":1.1")
     end
 
     test "name appears in list after request" do
@@ -109,7 +111,8 @@ defmodule GaoBus.NameRegistryTest do
       peer = spawn_peer()
       NameRegistry.request_name("com.test.Svc", 0, peer, ":1.1")
 
-      assert {:ok, @name_already_owner} = NameRegistry.request_name("com.test.Svc", 0, peer, ":1.1")
+      assert {:ok, @name_already_owner} =
+               NameRegistry.request_name("com.test.Svc", 0, peer, ":1.1")
     end
   end
 
@@ -123,7 +126,12 @@ defmodule GaoBus.NameRegistryTest do
 
       # Challenger tries to replace
       assert {:ok, @name_exists} =
-               NameRegistry.request_name("com.test.Svc", @flag_replace_existing ||| @flag_do_not_queue, challenger, ":1.2")
+               NameRegistry.request_name(
+                 "com.test.Svc",
+                 @flag_replace_existing ||| @flag_do_not_queue,
+                 challenger,
+                 ":1.2"
+               )
 
       # Original owner still owns
       assert {:ok, ":1.1"} = NameRegistry.get_name_owner("com.test.Svc")
@@ -138,7 +146,12 @@ defmodule GaoBus.NameRegistryTest do
 
       # Challenger replaces
       assert {:ok, @name_primary_owner} =
-               NameRegistry.request_name("com.test.Svc", @flag_replace_existing, challenger, ":1.2")
+               NameRegistry.request_name(
+                 "com.test.Svc",
+                 @flag_replace_existing,
+                 challenger,
+                 ":1.2"
+               )
 
       # Challenger is now owner
       assert {:ok, ":1.2"} = NameRegistry.get_name_owner("com.test.Svc")
@@ -154,7 +167,12 @@ defmodule GaoBus.NameRegistryTest do
 
       # Challenger wants to replace but will be queued
       assert {:ok, @name_in_queue} =
-               NameRegistry.request_name("com.test.Svc", @flag_replace_existing, challenger, ":1.2")
+               NameRegistry.request_name(
+                 "com.test.Svc",
+                 @flag_replace_existing,
+                 challenger,
+                 ":1.2"
+               )
 
       # Original still owns
       assert {:ok, ":1.1"} = NameRegistry.get_name_owner("com.test.Svc")

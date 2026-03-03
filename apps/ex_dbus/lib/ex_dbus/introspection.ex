@@ -11,9 +11,9 @@ defmodule ExDBus.Introspection do
   """
   @type t :: %__MODULE__{
           name: String.t() | nil,
-          methods: [Method.t()],
-          signals: [Signal.t()],
-          properties: [Property.t()]
+          methods: [__MODULE__.Method.t()],
+          signals: [__MODULE__.Signal.t()],
+          properties: [__MODULE__.Property.t()]
         }
 
   defstruct name: nil, methods: [], signals: [], properties: []
@@ -32,13 +32,21 @@ defmodule ExDBus.Introspection do
 
   defmodule Property do
     @moduledoc false
-    @type t :: %__MODULE__{name: String.t() | nil, type: String.t() | nil, access: :read | :write | :readwrite}
+    @type t :: %__MODULE__{
+            name: String.t() | nil,
+            type: String.t() | nil,
+            access: :read | :write | :readwrite
+          }
     defstruct name: nil, type: nil, access: :read
   end
 
   defmodule Arg do
     @moduledoc false
-    @type t :: %__MODULE__{name: String.t() | nil, type: String.t() | nil, direction: :in | :out | nil}
+    @type t :: %__MODULE__{
+            name: String.t() | nil,
+            type: String.t() | nil,
+            direction: :in | :out | nil
+          }
     defstruct name: nil, type: nil, direction: nil
   end
 
@@ -88,10 +96,7 @@ defmodule ExDBus.Introspection do
   """
   @spec from_xml(String.t()) :: {:ok, String.t(), [t()], [String.t()]} | {:error, term()}
   def from_xml(xml) when is_binary(xml) do
-    case parse_node(xml) do
-      {:ok, _path, _interfaces, _children} = result -> result
-      {:error, _} = error -> error
-    end
+    parse_node(xml)
   end
 
   @doc """
@@ -387,13 +392,22 @@ defmodule ExDBus.Introspection do
       %Property{
         name: name,
         type: type,
-        access: String.to_atom(access)
+        access:
+          case access do
+            "read" -> :read
+            "write" -> :write
+            "readwrite" -> :readwrite
+            _ -> :readwrite
+          end
       }
     end)
   end
 
   defp parse_args(body) do
-    Regex.scan(~r/<arg(?:\s+name="([^"]*)")?\s+type="([^"]+)"(?:\s+direction="([^"]+)")?\/>/s, body)
+    Regex.scan(
+      ~r/<arg(?:\s+name="([^"]*)")?\s+type="([^"]+)"(?:\s+direction="([^"]+)")?\/>/s,
+      body
+    )
     |> Enum.map(fn match ->
       name = Enum.at(match, 1)
       type = Enum.at(match, 2)
@@ -402,7 +416,16 @@ defmodule ExDBus.Introspection do
       %Arg{
         name: if(name == "", do: nil, else: name),
         type: type,
-        direction: if(direction, do: String.to_atom(direction), else: nil)
+        direction:
+          if direction do
+            case direction do
+              "in" -> :in
+              "out" -> :out
+              _ -> :in
+            end
+          else
+            nil
+          end
       }
     end)
   end

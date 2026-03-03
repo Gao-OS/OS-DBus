@@ -7,9 +7,10 @@ defmodule GaoConfig.Application do
   def start(_type, _args) do
     store_path = Application.get_env(:gao_config, :store_path, "/tmp/gao_config.dat")
 
-    children = [
-      {GaoConfig.ConfigStore, path: store_path}
-    ] ++ bus_client_child()
+    children =
+      [
+        {GaoConfig.ConfigStore, path: store_path}
+      ] ++ bus_client_child()
 
     opts = [strategy: :one_for_one, name: GaoConfig.Supervisor]
     Supervisor.start_link(children, opts)

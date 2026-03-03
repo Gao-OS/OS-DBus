@@ -182,8 +182,10 @@ defmodule ExDBus.Message do
     # Encode header fields array at offset 12 (after fixed header)
     # This ensures alignment is calculated relative to message start
     fields = build_header_fields(msg)
+
     {fields_iodata, offset_after_fields} =
       Encoder.encode_at(fields, {:array, {:struct, [:byte, :variant]}}, endianness, 12)
+
     fields_binary = IO.iodata_to_binary(fields_iodata)
 
     # Align body to 8-byte boundary
@@ -227,6 +229,7 @@ defmodule ExDBus.Message do
 
   defp encode_body(body, signature, endianness) when is_binary(signature) do
     {:ok, types} = Types.parse_types(signature)
+
     encode_body_values(body, types, endianness, 0)
     |> IO.iodata_to_binary()
   end
@@ -270,7 +273,8 @@ defmodule ExDBus.Message do
          body_padding = rem(8 - rem(offset, 8), 8),
          <<_pad::binary-size(body_padding), body_rest::binary>> <- rest4,
          sig = extract_field_value(fields_list, @field_signature),
-         {body, rest5} <- decode_body(body_rest, sig, body_length, endianness, offset + body_padding) do
+         {body, rest5} <-
+           decode_body(body_rest, sig, body_length, endianness, offset + body_padding) do
       msg = %__MODULE__{
         type: msg_type,
         serial: serial,
@@ -308,7 +312,9 @@ defmodule ExDBus.Message do
 
       # Body alignment is relative to the body start (offset 0)
       case decode_body_values(body_data, types, endianness, 0) do
-        {:ok, values, _rest, _offset} -> {values, rest}
+        {:ok, values, _rest, _offset} ->
+          {values, rest}
+
         {:error, _reason} ->
           {[], rest}
       end

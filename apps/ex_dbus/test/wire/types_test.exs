@@ -76,7 +76,7 @@ defmodule ExDBus.Wire.TypesTest do
         "as",
         "a{sv}",
         "(isi)",
-        "(sai)",
+        "(sai)"
       ]
 
       for sig <- signatures do

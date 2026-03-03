@@ -50,13 +50,14 @@ defmodule ExDBus.ProxyTest do
 
   describe "get_property/4" do
     test "calls Properties.Get and unwraps variant" do
-      conn = start_mock_connection(fn msg ->
-        # Return a variant value
-        Message.method_return(msg.serial,
-          signature: "v",
-          body: [{"s", "dark"}]
-        )
-      end)
+      conn =
+        start_mock_connection(fn msg ->
+          # Return a variant value
+          Message.method_return(msg.serial,
+            signature: "v",
+            body: [{"s", "dark"}]
+          )
+        end)
 
       proxy = Proxy.new(conn, "com.test.Svc", "/com/test/Obj")
 
@@ -64,12 +65,14 @@ defmodule ExDBus.ProxyTest do
     end
 
     test "sends correct interface and property names" do
-      conn = start_mock_connection(fn msg ->
-        Message.method_return(msg.serial,
-          signature: "v",
-          body: [{"s", "value"}]
-        )
-      end)
+      conn =
+        start_mock_connection(fn msg ->
+          Message.method_return(msg.serial,
+            signature: "v",
+            body: [{"s", "value"}]
+          )
+        end)
+
       proxy = Proxy.new(conn, "com.test.Svc", "/com/test/Obj")
 
       Proxy.get_property(proxy, "com.test.Iface", "Theme")
@@ -98,12 +101,13 @@ defmodule ExDBus.ProxyTest do
 
   describe "get_all_properties/3" do
     test "calls Properties.GetAll and unwraps" do
-      conn = start_mock_connection(fn msg ->
-        Message.method_return(msg.serial,
-          signature: "a{sv}",
-          body: [[{"Theme", {"s", "dark"}}, {"FontSize", {"u", 14}}]]
-        )
-      end)
+      conn =
+        start_mock_connection(fn msg ->
+          Message.method_return(msg.serial,
+            signature: "a{sv}",
+            body: [[{"Theme", {"s", "dark"}}, {"FontSize", {"u", 14}}]]
+          )
+        end)
 
       proxy = Proxy.new(conn, "com.test.Svc", "/com/test/Obj")
 
@@ -116,12 +120,13 @@ defmodule ExDBus.ProxyTest do
     test "calls Introspectable.Introspect and unwraps XML" do
       xml = "<node><interface name=\"com.test\"/></node>"
 
-      conn = start_mock_connection(fn msg ->
-        Message.method_return(msg.serial,
-          signature: "s",
-          body: [xml]
-        )
-      end)
+      conn =
+        start_mock_connection(fn msg ->
+          Message.method_return(msg.serial,
+            signature: "s",
+            body: [xml]
+          )
+        end)
 
       proxy = Proxy.new(conn, "com.test.Svc", "/com/test/Obj")
 
@@ -134,10 +139,11 @@ defmodule ExDBus.ProxyTest do
       conn = start_mock_signal_connection()
       proxy = Proxy.new(conn, "com.test.Svc", "/com/test/Obj")
 
-      :ok = Proxy.emit_signal(proxy, "com.test.Iface", "Updated",
-        signature: "s",
-        body: ["new_value"]
-      )
+      :ok =
+        Proxy.emit_signal(proxy, "com.test.Iface", "Updated",
+          signature: "s",
+          body: ["new_value"]
+        )
 
       assert_receive {:mock_signal, signal}
       assert signal.type == :signal

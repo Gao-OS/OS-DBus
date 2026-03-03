@@ -118,7 +118,7 @@ defmodule GaoConfig.ConfigStore do
     case File.read(path) do
       {:ok, data} ->
         try do
-          entries = :erlang.binary_to_term(data)
+          entries = :erlang.binary_to_term(data, [:safe])
           Enum.each(entries, fn entry -> :ets.insert(@table, entry) end)
           Logger.debug("GaoConfig: loaded #{length(entries)} entries from #{path}")
         rescue
@@ -138,7 +138,9 @@ defmodule GaoConfig.ConfigStore do
     data = :erlang.term_to_binary(entries)
 
     case File.write(path, data) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, reason} ->
         Logger.warning("GaoConfig: failed to persist to #{path}: #{inspect(reason)}")
     end

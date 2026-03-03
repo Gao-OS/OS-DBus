@@ -66,7 +66,13 @@ defmodule ExDBus.Wire.RoundtripTest do
     end
 
     test "string values" do
-      for v <- ["", "hello", "Hello, World!", "unicode: \u00e9\u00e8\u00ea", String.duplicate("x", 1000)] do
+      for v <- [
+            "",
+            "hello",
+            "Hello, World!",
+            "unicode: \u00e9\u00e8\u00ea",
+            String.duplicate("x", 1000)
+          ] do
         assert roundtrip(v, :string) == v
       end
     end
@@ -170,8 +176,21 @@ defmodule ExDBus.Wire.RoundtripTest do
 
       type =
         {:struct,
-         [:byte, :boolean, :int16, :uint16, :int32, :uint32, :int64, :uint64, :double, :string,
-          :object_path, :unix_fd]}
+         [
+           :byte,
+           :boolean,
+           :int16,
+           :uint16,
+           :int32,
+           :uint32,
+           :int64,
+           :uint64,
+           :double,
+           :string,
+           :object_path,
+           :unix_fd
+         ]}
+
       assert roundtrip(value, type) == value
     end
 
@@ -227,6 +246,7 @@ defmodule ExDBus.Wire.RoundtripTest do
         {"bool_val", {"b", true}},
         {"byte_val", {"y", 255}}
       ]
+
       type = {:array, {:dict_entry, :string, :variant}}
       assert roundtrip(entries, type) == entries
     end
@@ -262,6 +282,7 @@ defmodule ExDBus.Wire.RoundtripTest do
         {1, [{"i", 10}, {"s", "x"}]},
         {2, [{"b", false}]}
       ]
+
       type = {:array, {:struct, [:int32, {:array, :variant}]}}
       assert roundtrip(value, type) == value
     end
@@ -273,6 +294,7 @@ defmodule ExDBus.Wire.RoundtripTest do
         {"Features", {"ai", [1, 2, 3]}},
         {"Active", {"b", true}}
       ]
+
       type = {:array, {:dict_entry, :string, :variant}}
       assert roundtrip(entries, type) == entries
     end

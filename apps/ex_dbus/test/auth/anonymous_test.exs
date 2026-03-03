@@ -41,7 +41,9 @@ defmodule ExDBus.Auth.AnonymousTest do
 
     test "wrong state returns error" do
       state = %Anonymous{state: :authenticated, guid: "x"}
-      assert {:error, {:unexpected_state, :authenticated, _}} = Anonymous.handle_line("OK guid", state)
+
+      assert {:error, {:unexpected_state, :authenticated, _}} =
+               Anonymous.handle_line("OK guid", state)
     end
   end
 end

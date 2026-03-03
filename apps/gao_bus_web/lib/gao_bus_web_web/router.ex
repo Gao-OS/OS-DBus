@@ -1,5 +1,6 @@
 defmodule GaoBusWebWeb.Router do
   use GaoBusWebWeb, :router
+  @moduledoc false
 
   pipeline :browser do
     plug :accepts, ["html"]

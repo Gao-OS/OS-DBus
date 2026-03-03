@@ -191,6 +191,7 @@ defmodule GaoBus.Peer do
 
       # Set up default capabilities based on credentials
       creds = Map.put(state.credentials || %{}, :unique_name, name)
+
       if Process.whereis(Capability) do
         Capability.setup_defaults(name, creds)
       end

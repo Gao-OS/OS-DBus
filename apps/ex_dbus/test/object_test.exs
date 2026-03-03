@@ -67,8 +67,13 @@ defmodule ExDBus.ObjectTest do
 
   describe "dispatch/2 — method calls" do
     test "dispatches to handle_method" do
-      m = msg("/test", "com.example.Test", "Echo",
-        serial: 1, sender: ":1.1", signature: "s", body: ["hello"])
+      m =
+        msg("/test", "com.example.Test", "Echo",
+          serial: 1,
+          sender: ":1.1",
+          signature: "s",
+          body: ["hello"]
+        )
 
       assert {:ok, reply} = Object.dispatch(m, TestObject)
       assert reply.type == :method_return
@@ -77,16 +82,20 @@ defmodule ExDBus.ObjectTest do
     end
 
     test "dispatches with multiple args" do
-      m = msg("/test", "com.example.Test", "Add",
-        serial: 2, sender: ":1.1", signature: "ii", body: [3, 4])
+      m =
+        msg("/test", "com.example.Test", "Add",
+          serial: 2,
+          sender: ":1.1",
+          signature: "ii",
+          body: [3, 4]
+        )
 
       assert {:ok, reply} = Object.dispatch(m, TestObject)
       assert reply.body == [7]
     end
 
     test "returns error for unknown method" do
-      m = msg("/test", "com.example.Test", "Nonexistent",
-        serial: 3, sender: ":1.1")
+      m = msg("/test", "com.example.Test", "Nonexistent", serial: 3, sender: ":1.1")
 
       assert {:error, error} = Object.dispatch(m, TestObject)
       assert error.type == :error
@@ -96,8 +105,11 @@ defmodule ExDBus.ObjectTest do
 
   describe "dispatch/2 — introspection" do
     test "handles Introspect" do
-      m = msg("/test", "org.freedesktop.DBus.Introspectable", "Introspect",
-        serial: 1, sender: ":1.1")
+      m =
+        msg("/test", "org.freedesktop.DBus.Introspectable", "Introspect",
+          serial: 1,
+          sender: ":1.1"
+        )
 
       assert {:ok, reply} = Object.dispatch(m, TestObject)
       assert reply.type == :method_return
@@ -110,9 +122,13 @@ defmodule ExDBus.ObjectTest do
 
   describe "dispatch/2 — properties" do
     test "handles Properties.Get" do
-      m = msg("/test", "org.freedesktop.DBus.Properties", "Get",
-        serial: 1, sender: ":1.1", signature: "ss",
-        body: ["com.example.Test", "Version"])
+      m =
+        msg("/test", "org.freedesktop.DBus.Properties", "Get",
+          serial: 1,
+          sender: ":1.1",
+          signature: "ss",
+          body: ["com.example.Test", "Version"]
+        )
 
       assert {:ok, reply} = Object.dispatch(m, TestObject)
       assert reply.type == :method_return
@@ -120,9 +136,13 @@ defmodule ExDBus.ObjectTest do
     end
 
     test "handles Properties.Get for unknown property" do
-      m = msg("/test", "org.freedesktop.DBus.Properties", "Get",
-        serial: 1, sender: ":1.1", signature: "ss",
-        body: ["com.example.Test", "Bogus"])
+      m =
+        msg("/test", "org.freedesktop.DBus.Properties", "Get",
+          serial: 1,
+          sender: ":1.1",
+          signature: "ss",
+          body: ["com.example.Test", "Bogus"]
+        )
 
       assert {:error, error} = Object.dispatch(m, TestObject)
       assert error.error_name == "org.freedesktop.DBus.Error.UnknownProperty"
@@ -131,16 +151,14 @@ defmodule ExDBus.ObjectTest do
 
   describe "dispatch/2 — peer interface" do
     test "handles Ping" do
-      m = msg("/test", "org.freedesktop.DBus.Peer", "Ping",
-        serial: 1, sender: ":1.1")
+      m = msg("/test", "org.freedesktop.DBus.Peer", "Ping", serial: 1, sender: ":1.1")
 
       assert {:ok, reply} = Object.dispatch(m, TestObject)
       assert reply.type == :method_return
     end
 
     test "handles GetMachineId" do
-      m = msg("/test", "org.freedesktop.DBus.Peer", "GetMachineId",
-        serial: 1, sender: ":1.1")
+      m = msg("/test", "org.freedesktop.DBus.Peer", "GetMachineId", serial: 1, sender: ":1.1")
 
       assert {:ok, reply} = Object.dispatch(m, TestObject)
       assert reply.type == :method_return

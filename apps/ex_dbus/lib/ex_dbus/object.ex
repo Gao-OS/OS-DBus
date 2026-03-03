@@ -113,10 +113,21 @@ defmodule ExDBus.Object do
     Code.ensure_loaded(object_mod)
 
     case msg.member do
-      "Get" -> handle_property_get(msg, object_mod)
-      "Set" -> handle_property_set(msg, object_mod)
-      "GetAll" -> handle_property_get_all(msg)
-      _ -> property_error(msg, "org.freedesktop.DBus.Error.UnknownMethod", "Unknown method: #{msg.member}")
+      "Get" ->
+        handle_property_get(msg, object_mod)
+
+      "Set" ->
+        handle_property_set(msg, object_mod)
+
+      "GetAll" ->
+        handle_property_get_all(msg)
+
+      _ ->
+        property_error(
+          msg,
+          "org.freedesktop.DBus.Error.UnknownMethod",
+          "Unknown method: #{msg.member}"
+        )
     end
   end
 
@@ -137,7 +148,11 @@ defmodule ExDBus.Object do
           property_error(msg, error_name, error_msg)
       end
     else
-      property_error(msg, "org.freedesktop.DBus.Error.UnknownProperty", "Property not found: #{property}")
+      property_error(
+        msg,
+        "org.freedesktop.DBus.Error.UnknownProperty",
+        "Property not found: #{property}"
+      )
     end
   end
 
@@ -153,7 +168,11 @@ defmodule ExDBus.Object do
           property_error(msg, error_name, error_msg)
       end
     else
-      property_error(msg, "org.freedesktop.DBus.Error.PropertyReadOnly", "Property not writable: #{property}")
+      property_error(
+        msg,
+        "org.freedesktop.DBus.Error.PropertyReadOnly",
+        "Property not writable: #{property}"
+      )
     end
   end
 

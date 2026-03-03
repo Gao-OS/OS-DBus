@@ -22,10 +22,11 @@ defmodule ExDBus.AddressTest do
     test "parses multiple fallback addresses" do
       addr = "unix:path=/tmp/a;tcp:host=localhost,port=1234"
 
-      assert {:ok, [
-        {:unix, %{"path" => "/tmp/a"}},
-        {:tcp, %{"host" => "localhost", "port" => "1234"}}
-      ]} = Address.parse(addr)
+      assert {:ok,
+              [
+                {:unix, %{"path" => "/tmp/a"}},
+                {:tcp, %{"host" => "localhost", "port" => "1234"}}
+              ]} = Address.parse(addr)
     end
 
     test "handles hex-escaped values" do

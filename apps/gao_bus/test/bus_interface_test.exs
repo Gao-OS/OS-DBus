@@ -125,7 +125,8 @@ defmodule GaoBus.BusInterfaceTest do
       {reply, _state} = BusInterface.handle_message(msg, peer, state)
 
       assert reply.type == :method_return
-      assert reply.body == [1]  # primary owner
+      # primary owner
+      assert reply.body == [1]
     end
   end
 
@@ -139,7 +140,8 @@ defmodule GaoBus.BusInterfaceTest do
       {reply, _state} = BusInterface.handle_message(msg, peer, state)
 
       assert reply.type == :method_return
-      assert reply.body == [1]  # released
+      # released
+      assert reply.body == [1]
     end
 
     test "releasing non-existent name returns 2", %{state: state} do
@@ -149,7 +151,8 @@ defmodule GaoBus.BusInterfaceTest do
       {reply, _state} = BusInterface.handle_message(msg, peer, state)
 
       assert reply.type == :method_return
-      assert reply.body == [2]  # non-existent
+      # non-existent
+      assert reply.body == [2]
     end
   end
 
@@ -255,9 +258,12 @@ defmodule GaoBus.BusInterfaceTest do
     test "AddMatch succeeds for valid rule", %{state: state} do
       peer = start_fake_peer(unique_name: ":1.10")
 
-      msg = bus_method_call("AddMatch",
-        signature: "s",
-        body: ["type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged'"])
+      msg =
+        bus_method_call("AddMatch",
+          signature: "s",
+          body: ["type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged'"]
+        )
+
       {reply, _state} = BusInterface.handle_message(msg, peer, state)
 
       assert reply.type == :method_return
@@ -281,9 +287,12 @@ defmodule GaoBus.BusInterfaceTest do
     test "RemoveMatch fails for non-existent rule", %{state: state} do
       peer = start_fake_peer(unique_name: ":1.10")
 
-      msg = bus_method_call("RemoveMatch",
-        signature: "s",
-        body: ["type='signal',member='NeverAdded'"])
+      msg =
+        bus_method_call("RemoveMatch",
+          signature: "s",
+          body: ["type='signal',member='NeverAdded'"]
+        )
+
       {reply, _state} = BusInterface.handle_message(msg, peer, state)
 
       assert reply.type == :error
@@ -294,8 +303,11 @@ defmodule GaoBus.BusInterfaceTest do
     test "returns XML with bus interface", %{state: state} do
       peer = start_fake_peer(unique_name: ":1.10")
 
-      msg = bus_method_call("Introspect",
-        interface: "org.freedesktop.DBus.Introspectable")
+      msg =
+        bus_method_call("Introspect",
+          interface: "org.freedesktop.DBus.Introspectable"
+        )
+
       {reply, _state} = BusInterface.handle_message(msg, peer, state)
 
       assert reply.type == :method_return
@@ -311,10 +323,13 @@ defmodule GaoBus.BusInterfaceTest do
     test "Get Features returns empty array", %{state: state} do
       peer = start_fake_peer(unique_name: ":1.10")
 
-      msg = bus_method_call("Get",
-        interface: "org.freedesktop.DBus.Properties",
-        signature: "ss",
-        body: ["org.freedesktop.DBus", "Features"])
+      msg =
+        bus_method_call("Get",
+          interface: "org.freedesktop.DBus.Properties",
+          signature: "ss",
+          body: ["org.freedesktop.DBus", "Features"]
+        )
+
       {reply, _state} = BusInterface.handle_message(msg, peer, state)
 
       assert reply.type == :method_return
@@ -324,10 +339,13 @@ defmodule GaoBus.BusInterfaceTest do
     test "Get Interfaces returns interface list", %{state: state} do
       peer = start_fake_peer(unique_name: ":1.10")
 
-      msg = bus_method_call("Get",
-        interface: "org.freedesktop.DBus.Properties",
-        signature: "ss",
-        body: ["org.freedesktop.DBus", "Interfaces"])
+      msg =
+        bus_method_call("Get",
+          interface: "org.freedesktop.DBus.Properties",
+          signature: "ss",
+          body: ["org.freedesktop.DBus", "Interfaces"]
+        )
+
       {reply, _state} = BusInterface.handle_message(msg, peer, state)
 
       assert reply.type == :method_return
@@ -339,10 +357,13 @@ defmodule GaoBus.BusInterfaceTest do
     test "Get unknown property returns error", %{state: state} do
       peer = start_fake_peer(unique_name: ":1.10")
 
-      msg = bus_method_call("Get",
-        interface: "org.freedesktop.DBus.Properties",
-        signature: "ss",
-        body: ["org.freedesktop.DBus", "NoSuchProp"])
+      msg =
+        bus_method_call("Get",
+          interface: "org.freedesktop.DBus.Properties",
+          signature: "ss",
+          body: ["org.freedesktop.DBus", "NoSuchProp"]
+        )
+
       {reply, _state} = BusInterface.handle_message(msg, peer, state)
 
       assert reply.type == :error
@@ -352,10 +373,13 @@ defmodule GaoBus.BusInterfaceTest do
     test "GetAll returns Features and Interfaces", %{state: state} do
       peer = start_fake_peer(unique_name: ":1.10")
 
-      msg = bus_method_call("GetAll",
-        interface: "org.freedesktop.DBus.Properties",
-        signature: "s",
-        body: ["org.freedesktop.DBus"])
+      msg =
+        bus_method_call("GetAll",
+          interface: "org.freedesktop.DBus.Properties",
+          signature: "s",
+          body: ["org.freedesktop.DBus"]
+        )
+
       {reply, _state} = BusInterface.handle_message(msg, peer, state)
 
       assert reply.type == :method_return
@@ -414,7 +438,8 @@ defmodule GaoBus.BusInterfaceTest do
       msg = bus_method_call("GetId")
       {reply, _state} = BusInterface.handle_message(msg, peer, state)
 
-      assert reply.destination == ":1.99"  # matches sender from bus_method_call
+      # matches sender from bus_method_call
+      assert reply.destination == ":1.99"
       assert reply.sender == "org.freedesktop.DBus"
     end
   end

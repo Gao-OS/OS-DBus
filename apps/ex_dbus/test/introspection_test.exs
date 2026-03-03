@@ -229,12 +229,13 @@ defmodule ExDBus.IntrospectionTest do
     end
 
     test "bus interface XML roundtrips" do
-      xml = Introspection.to_xml("/org/freedesktop/DBus", [
-        Introspection.bus_interface(),
-        Introspection.introspectable_interface(),
-        Introspection.properties_interface(),
-        Introspection.peer_interface()
-      ])
+      xml =
+        Introspection.to_xml("/org/freedesktop/DBus", [
+          Introspection.bus_interface(),
+          Introspection.introspectable_interface(),
+          Introspection.properties_interface(),
+          Introspection.peer_interface()
+        ])
 
       assert {:ok, "/org/freedesktop/DBus", interfaces, []} = Introspection.from_xml(xml)
       assert length(interfaces) == 4

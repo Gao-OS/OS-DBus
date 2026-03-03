@@ -15,7 +15,8 @@ defmodule ExDBus.Transport.TCP do
   defstruct [:socket]
 
   @impl true
-  @spec connect(String.t() | {String.t(), non_neg_integer()}, keyword()) :: {:ok, t()} | {:error, term()}
+  @spec connect(String.t() | {String.t(), non_neg_integer()}, keyword()) ::
+          {:ok, t()} | {:error, term()}
   def connect(address, opts \\ []) do
     {host, port} = parse_address(address)
     timeout = Keyword.get(opts, :timeout, 5_000)
@@ -67,7 +68,8 @@ defmodule ExDBus.Transport.TCP do
       iex> ExDBus.Transport.TCP.parse_address("tcp:host=localhost,port=12345")
       {"localhost", 12345}
   """
-  @spec parse_address(String.t() | {String.t(), non_neg_integer()}) :: {String.t(), non_neg_integer()}
+  @spec parse_address(String.t() | {String.t(), non_neg_integer()}) ::
+          {String.t(), non_neg_integer()}
   def parse_address("tcp:" <> params) do
     kv =
       params

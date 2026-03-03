@@ -1,5 +1,6 @@
 defmodule GaoBusWebWeb.MessagesLive do
   use GaoBusWebWeb, :live_view
+  @moduledoc "Live filtered D-Bus message stream inspector."
 
   @max_messages 1000
 
@@ -121,14 +122,36 @@ defmodule GaoBusWebWeb.MessagesLive do
           <select name="type" class="select select-bordered select-sm">
             <option value="">All Types</option>
             <option value="method_call" selected={@filter_type == "method_call"}>method_call</option>
-            <option value="method_return" selected={@filter_type == "method_return"}>method_return</option>
+            <option value="method_return" selected={@filter_type == "method_return"}>
+              method_return
+            </option>
             <option value="error" selected={@filter_type == "error"}>error</option>
             <option value="signal" selected={@filter_type == "signal"}>signal</option>
           </select>
-          <input name="sender" value={@filter_sender} placeholder="Sender" class="input input-bordered input-sm" />
-          <input name="dest" value={@filter_dest} placeholder="Destination" class="input input-bordered input-sm" />
-          <input name="interface" value={@filter_interface} placeholder="Interface" class="input input-bordered input-sm" />
-          <input name="member" value={@filter_member} placeholder="Member" class="input input-bordered input-sm" />
+          <input
+            name="sender"
+            value={@filter_sender}
+            placeholder="Sender"
+            class="input input-bordered input-sm"
+          />
+          <input
+            name="dest"
+            value={@filter_dest}
+            placeholder="Destination"
+            class="input input-bordered input-sm"
+          />
+          <input
+            name="interface"
+            value={@filter_interface}
+            placeholder="Interface"
+            class="input input-bordered input-sm"
+          />
+          <input
+            name="member"
+            value={@filter_member}
+            placeholder="Member"
+            class="input input-bordered input-sm"
+          />
         </div>
       </form>
 

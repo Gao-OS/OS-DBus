@@ -121,9 +121,7 @@ defmodule ExDBus.Proxy do
   def introspect(%__MODULE__{} = proxy, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 5_000)
 
-    case call(proxy, "org.freedesktop.DBus.Introspectable", "Introspect",
-           timeout: timeout
-         ) do
+    case call(proxy, "org.freedesktop.DBus.Introspectable", "Introspect", timeout: timeout) do
       {:ok, %Message{body: [xml]}} -> {:ok, xml}
       {:error, _} = err -> err
     end

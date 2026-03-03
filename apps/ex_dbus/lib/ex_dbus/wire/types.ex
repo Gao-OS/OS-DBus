@@ -261,9 +261,15 @@ defmodule ExDBus.Wire.Types do
   def valid?(:uint16, v), do: is_integer(v) and v >= 0 and v <= 65_535
   def valid?(:int32, v), do: is_integer(v) and v >= -2_147_483_648 and v <= 2_147_483_647
   def valid?(:uint32, v), do: is_integer(v) and v >= 0 and v <= 4_294_967_295
-  def valid?(:int64, v), do: is_integer(v) and v >= -9_223_372_036_854_775_808 and v <= 9_223_372_036_854_775_807
+
+  def valid?(:int64, v),
+    do: is_integer(v) and v >= -9_223_372_036_854_775_808 and v <= 9_223_372_036_854_775_807
+
   def valid?(:uint64, v), do: is_integer(v) and v >= 0 and v <= 18_446_744_073_709_551_615
-  def valid?(:double, v), do: is_float(v) or (is_integer(v) and v >= -2_147_483_648 and v <= 2_147_483_647)
+
+  def valid?(:double, v),
+    do: is_float(v) or (is_integer(v) and v >= -2_147_483_648 and v <= 2_147_483_647)
+
   def valid?(:string, v), do: is_binary(v) and String.valid?(v)
   def valid?(:object_path, v), do: is_binary(v) and valid_object_path?(v)
   def valid?(:signature, v), do: is_binary(v) and valid_signature?(v)

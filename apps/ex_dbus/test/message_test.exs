@@ -4,8 +4,11 @@ defmodule ExDBus.MessageTest do
 
   describe "message construction" do
     test "creates method_call message" do
-      msg = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "Hello",
-        serial: 1, destination: "org.freedesktop.DBus")
+      msg =
+        Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "Hello",
+          serial: 1,
+          destination: "org.freedesktop.DBus"
+        )
 
       assert msg.type == :method_call
       assert msg.serial == 1
@@ -16,8 +19,8 @@ defmodule ExDBus.MessageTest do
     end
 
     test "creates method_return message" do
-      msg = Message.method_return(1, serial: 2, destination: ":1.1",
-        signature: "s", body: ["hello"])
+      msg =
+        Message.method_return(1, serial: 2, destination: ":1.1", signature: "s", body: ["hello"])
 
       assert msg.type == :method_return
       assert msg.reply_serial == 1
@@ -26,8 +29,12 @@ defmodule ExDBus.MessageTest do
     end
 
     test "creates error message" do
-      msg = Message.error("org.freedesktop.DBus.Error.UnknownMethod", 1,
-        serial: 2, signature: "s", body: ["Method not found"])
+      msg =
+        Message.error("org.freedesktop.DBus.Error.UnknownMethod", 1,
+          serial: 2,
+          signature: "s",
+          body: ["Method not found"]
+        )
 
       assert msg.type == :error
       assert msg.error_name == "org.freedesktop.DBus.Error.UnknownMethod"
@@ -35,8 +42,12 @@ defmodule ExDBus.MessageTest do
     end
 
     test "creates signal message" do
-      msg = Message.signal("/org/freedesktop/DBus", "org.freedesktop.DBus", "NameOwnerChanged",
-        serial: 3, signature: "sss", body: [":1.1", "", ":1.1"])
+      msg =
+        Message.signal("/org/freedesktop/DBus", "org.freedesktop.DBus", "NameOwnerChanged",
+          serial: 3,
+          signature: "sss",
+          body: [":1.1", "", ":1.1"]
+        )
 
       assert msg.type == :signal
       assert msg.path == "/org/freedesktop/DBus"
@@ -47,8 +58,11 @@ defmodule ExDBus.MessageTest do
 
   describe "message encode/decode roundtrip" do
     test "roundtrips method_call without body" do
-      msg = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "Hello",
-        serial: 1, destination: "org.freedesktop.DBus")
+      msg =
+        Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "Hello",
+          serial: 1,
+          destination: "org.freedesktop.DBus"
+        )
 
       binary = Message.encode_message(msg)
       assert {:ok, decoded, <<>>} = Message.decode_message(binary)
@@ -63,9 +77,13 @@ defmodule ExDBus.MessageTest do
     end
 
     test "roundtrips method_call with string body" do
-      msg = Message.method_call("/org/test", "org.test.Iface", "GetValue",
-        serial: 42, destination: "org.test.Service",
-        signature: "s", body: ["test_key"])
+      msg =
+        Message.method_call("/org/test", "org.test.Iface", "GetValue",
+          serial: 42,
+          destination: "org.test.Service",
+          signature: "s",
+          body: ["test_key"]
+        )
 
       binary = Message.encode_message(msg)
       assert {:ok, decoded, <<>>} = Message.decode_message(binary)
@@ -79,8 +97,12 @@ defmodule ExDBus.MessageTest do
     end
 
     test "roundtrips method_call with multiple body args" do
-      msg = Message.method_call("/org/test", "org.test.Iface", "SetValue",
-        serial: 5, signature: "si", body: ["key", 42])
+      msg =
+        Message.method_call("/org/test", "org.test.Iface", "SetValue",
+          serial: 5,
+          signature: "si",
+          body: ["key", 42]
+        )
 
       binary = Message.encode_message(msg)
       assert {:ok, decoded, <<>>} = Message.decode_message(binary)
@@ -90,9 +112,7 @@ defmodule ExDBus.MessageTest do
     end
 
     test "roundtrips method_return with body" do
-      msg = Message.method_return(1,
-        serial: 2, destination: ":1.1",
-        signature: "i", body: [42])
+      msg = Message.method_return(1, serial: 2, destination: ":1.1", signature: "i", body: [42])
 
       binary = Message.encode_message(msg)
       assert {:ok, decoded, <<>>} = Message.decode_message(binary)
@@ -103,8 +123,12 @@ defmodule ExDBus.MessageTest do
     end
 
     test "roundtrips error message" do
-      msg = Message.error("org.freedesktop.DBus.Error.Failed", 5,
-        serial: 6, signature: "s", body: ["Something went wrong"])
+      msg =
+        Message.error("org.freedesktop.DBus.Error.Failed", 5,
+          serial: 6,
+          signature: "s",
+          body: ["Something went wrong"]
+        )
 
       binary = Message.encode_message(msg)
       assert {:ok, decoded, <<>>} = Message.decode_message(binary)
@@ -116,8 +140,12 @@ defmodule ExDBus.MessageTest do
     end
 
     test "roundtrips signal" do
-      msg = Message.signal("/org/freedesktop/DBus", "org.freedesktop.DBus", "NameAcquired",
-        serial: 1, signature: "s", body: [":1.42"])
+      msg =
+        Message.signal("/org/freedesktop/DBus", "org.freedesktop.DBus", "NameAcquired",
+          serial: 1,
+          signature: "s",
+          body: [":1.42"]
+        )
 
       binary = Message.encode_message(msg)
       assert {:ok, decoded, <<>>} = Message.decode_message(binary)
@@ -130,8 +158,12 @@ defmodule ExDBus.MessageTest do
     end
 
     test "roundtrips with big endian" do
-      msg = Message.method_call("/org/test", "org.test.Iface", "Ping",
-        serial: 1, signature: "i", body: [99])
+      msg =
+        Message.method_call("/org/test", "org.test.Iface", "Ping",
+          serial: 1,
+          signature: "i",
+          body: [99]
+        )
 
       binary = Message.encode_message(msg, :big)
       assert {:ok, decoded, <<>>} = Message.decode_message(binary)
@@ -142,8 +174,7 @@ defmodule ExDBus.MessageTest do
     end
 
     test "roundtrips message with no_reply_expected flag" do
-      msg = Message.method_call("/org/test", "org.test.Iface", "Fire",
-        serial: 1, flags: 0x01)
+      msg = Message.method_call("/org/test", "org.test.Iface", "Fire", serial: 1, flags: 0x01)
 
       binary = Message.encode_message(msg)
       assert {:ok, decoded, <<>>} = Message.decode_message(binary)
@@ -154,12 +185,14 @@ defmodule ExDBus.MessageTest do
 
   describe "real-world D-Bus messages" do
     test "Hello method call (first message on bus)" do
-      msg = Message.method_call(
-        "/org/freedesktop/DBus",
-        "org.freedesktop.DBus",
-        "Hello",
-        serial: 1, destination: "org.freedesktop.DBus"
-      )
+      msg =
+        Message.method_call(
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus",
+          "Hello",
+          serial: 1,
+          destination: "org.freedesktop.DBus"
+        )
 
       binary = Message.encode_message(msg)
       assert {:ok, decoded, <<>>} = Message.decode_message(binary)
@@ -168,15 +201,16 @@ defmodule ExDBus.MessageTest do
     end
 
     test "RequestName method call" do
-      msg = Message.method_call(
-        "/org/freedesktop/DBus",
-        "org.freedesktop.DBus",
-        "RequestName",
-        serial: 2,
-        destination: "org.freedesktop.DBus",
-        signature: "su",
-        body: ["org.example.MyService", 0]
-      )
+      msg =
+        Message.method_call(
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus",
+          "RequestName",
+          serial: 2,
+          destination: "org.freedesktop.DBus",
+          signature: "su",
+          body: ["org.example.MyService", 0]
+        )
 
       binary = Message.encode_message(msg)
       assert {:ok, decoded, <<>>} = Message.decode_message(binary)
@@ -185,14 +219,15 @@ defmodule ExDBus.MessageTest do
     end
 
     test "NameOwnerChanged signal" do
-      msg = Message.signal(
-        "/org/freedesktop/DBus",
-        "org.freedesktop.DBus",
-        "NameOwnerChanged",
-        serial: 10,
-        signature: "sss",
-        body: ["org.example.MyService", "", ":1.42"]
-      )
+      msg =
+        Message.signal(
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus",
+          "NameOwnerChanged",
+          serial: 10,
+          signature: "sss",
+          body: ["org.example.MyService", "", ":1.42"]
+        )
 
       binary = Message.encode_message(msg)
       assert {:ok, decoded, <<>>} = Message.decode_message(binary)

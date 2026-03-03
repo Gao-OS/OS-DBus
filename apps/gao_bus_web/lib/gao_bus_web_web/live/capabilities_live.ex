@@ -1,5 +1,6 @@
 defmodule GaoBusWebWeb.CapabilitiesLive do
   use GaoBusWebWeb, :live_view
+  @moduledoc "Capability policy viewer and access denial audit log."
 
   alias GaoBus.Policy.Capability
 

@@ -76,10 +76,11 @@ defmodule GaoBus.FdPassingTest do
       Process.sleep(50)
 
       # Send Hello
-      hello = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "Hello",
-        serial: 1,
-        destination: "org.freedesktop.DBus"
-      )
+      hello =
+        Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "Hello",
+          serial: 1,
+          destination: "org.freedesktop.DBus"
+        )
 
       data = Message.encode_message(hello)
       :socket.sendmsg(sock, %{iov: [data]})
@@ -128,12 +129,13 @@ defmodule GaoBus.FdPassingTest do
     end
 
     test "Message struct carries fds field", %{socket_path: _path} do
-      msg = Message.method_call("/test", "org.test", "SendFd",
-        serial: 1,
-        destination: "org.test.Service",
-        signature: "h",
-        body: [0]
-      )
+      msg =
+        Message.method_call("/test", "org.test", "SendFd",
+          serial: 1,
+          destination: "org.test.Service",
+          signature: "h",
+          body: [0]
+        )
 
       # Set FDs on the message
       msg = %{msg | fds: [42, 43], unix_fds: 2}
@@ -208,10 +210,11 @@ defmodule GaoBus.FdPassingTest do
   end
 
   defp do_hello(sock) do
-    hello = Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "Hello",
-      serial: 1,
-      destination: "org.freedesktop.DBus"
-    )
+    hello =
+      Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "Hello",
+        serial: 1,
+        destination: "org.freedesktop.DBus"
+      )
 
     data = Message.encode_message(hello)
     :socket.sendmsg(sock, %{iov: [data]})

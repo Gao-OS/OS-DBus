@@ -58,7 +58,9 @@ defmodule ExDBus.Auth.ExternalTest do
 
     test "REJECTED with mechanisms returns error" do
       state = %External{uid: 1000, state: :waiting_ok}
-      assert {:error, :rejected} = External.handle_line("REJECTED EXTERNAL DBUS_COOKIE_SHA1", state)
+
+      assert {:error, :rejected} =
+               External.handle_line("REJECTED EXTERNAL DBUS_COOKIE_SHA1", state)
     end
 
     test "ERROR response returns auth_error" do

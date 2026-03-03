@@ -1,5 +1,6 @@
 defmodule GaoBusWebWeb.CallLive do
   use GaoBusWebWeb, :live_view
+  @moduledoc "Interactive D-Bus method caller for testing service endpoints."
 
   alias ExDBus.Message
 
@@ -55,7 +56,8 @@ defmodule GaoBusWebWeb.CallLive do
   end
 
   def handle_info({:call_result, {:error, reason}}, socket) do
-    {:noreply, assign(socket, error: "Call failed: #{inspect(reason)}", result: nil, calling: false)}
+    {:noreply,
+     assign(socket, error: "Call failed: #{inspect(reason)}", result: nil, calling: false)}
   end
 
   def handle_info(_msg, socket), do: {:noreply, socket}
@@ -151,32 +153,51 @@ defmodule GaoBusWebWeb.CallLive do
 
           <div class="form-control">
             <label class="label"><span class="label-text">Interface</span></label>
-            <input name="interface" value={@interface} class="input input-bordered font-mono"
-                   placeholder="org.freedesktop.DBus" />
+            <input
+              name="interface"
+              value={@interface}
+              class="input input-bordered font-mono"
+              placeholder="org.freedesktop.DBus"
+            />
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text">Method</span></label>
-            <input name="method" value={@method} class="input input-bordered font-mono"
-                   placeholder="ListNames" />
+            <input
+              name="method"
+              value={@method}
+              class="input input-bordered font-mono"
+              placeholder="ListNames"
+            />
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text">Signature</span></label>
-            <input name="signature" value={@signature} class="input input-bordered font-mono"
-                   placeholder="s (leave empty for no args)" />
+            <input
+              name="signature"
+              value={@signature}
+              class="input input-bordered font-mono"
+              placeholder="s (leave empty for no args)"
+            />
           </div>
 
           <div class="form-control">
             <label class="label"><span class="label-text">Arguments (JSON)</span></label>
-            <input name="args" value={@args} class="input input-bordered font-mono"
-                   placeholder='["hello", 42]' />
+            <input
+              name="args"
+              value={@args}
+              class="input input-bordered font-mono"
+              placeholder='["hello", 42]'
+            />
           </div>
         </div>
 
-        <button type="submit" class={"btn btn-primary #{if @calling, do: "loading"}"} disabled={@calling}>
-          <.icon name="hero-play" class="size-4" />
-          Invoke
+        <button
+          type="submit"
+          class={"btn btn-primary #{if @calling, do: "loading"}"}
+          disabled={@calling}
+        >
+          <.icon name="hero-play" class="size-4" /> Invoke
         </button>
       </form>
 

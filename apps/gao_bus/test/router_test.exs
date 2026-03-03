@@ -137,10 +137,11 @@ defmodule GaoBus.RouterTest do
       Router.register_peer(peer, ":1.50")
       Process.sleep(50)
 
-      signal = Message.signal("/test", "com.test.Iface", "TestSignal",
-        sender: ":1.1",
-        serial: 1
-      )
+      signal =
+        Message.signal("/test", "com.test.Iface", "TestSignal",
+          sender: ":1.1",
+          serial: 1
+        )
 
       Router.route(signal, self())
       Process.sleep(50)
@@ -158,10 +159,11 @@ defmodule GaoBus.RouterTest do
       Router.unregister_peer(peer)
       Process.sleep(50)
 
-      signal = Message.signal("/test", "com.test.Iface", "TestSignal",
-        sender: ":1.1",
-        serial: 1
-      )
+      signal =
+        Message.signal("/test", "com.test.Iface", "TestSignal",
+          sender: ":1.1",
+          serial: 1
+        )
 
       Router.route(signal, self())
       Process.sleep(50)
@@ -295,13 +297,14 @@ defmodule GaoBus.RouterTest do
       caller_peer = start_fake_peer()
       NameRegistry.register_unique(":1.1", caller_peer)
 
-      reply = Message.method_return(1,
-        serial: 5,
-        destination: ":1.1",
-        sender: ":1.20",
-        signature: "s",
-        body: ["hello"]
-      )
+      reply =
+        Message.method_return(1,
+          serial: 5,
+          destination: ":1.1",
+          sender: ":1.20",
+          signature: "s",
+          body: ["hello"]
+        )
 
       Router.route(reply, self())
       Process.sleep(50)
@@ -315,13 +318,14 @@ defmodule GaoBus.RouterTest do
       caller_peer = start_fake_peer()
       NameRegistry.register_unique(":1.1", caller_peer)
 
-      error = Message.error("org.freedesktop.DBus.Error.Failed", 1,
-        serial: 5,
-        destination: ":1.1",
-        sender: ":1.20",
-        signature: "s",
-        body: ["something broke"]
-      )
+      error =
+        Message.error("org.freedesktop.DBus.Error.Failed", 1,
+          serial: 5,
+          destination: ":1.1",
+          sender: ":1.20",
+          signature: "s",
+          body: ["something broke"]
+        )
 
       Router.route(error, self())
       Process.sleep(50)
@@ -333,11 +337,12 @@ defmodule GaoBus.RouterTest do
     end
 
     test "method_return to unknown destination is silently dropped" do
-      reply = Message.method_return(1,
-        serial: 5,
-        destination: ":1.999",
-        sender: ":1.20"
-      )
+      reply =
+        Message.method_return(1,
+          serial: 5,
+          destination: ":1.999",
+          sender: ":1.20"
+        )
 
       Router.route(reply, self())
       Process.sleep(50)
@@ -363,10 +368,11 @@ defmodule GaoBus.RouterTest do
       Router.register_peer(live_peer, ":1.51")
       Process.sleep(50)
 
-      signal = Message.signal("/test", "com.test.Iface", "Ping",
-        sender: ":1.1",
-        serial: 1
-      )
+      signal =
+        Message.signal("/test", "com.test.Iface", "Ping",
+          sender: ":1.1",
+          serial: 1
+        )
 
       Router.route(signal, self())
       Process.sleep(50)
@@ -391,10 +397,11 @@ defmodule GaoBus.RouterTest do
       Router.register_peer(peer3, ":1.12")
       Process.sleep(50)
 
-      signal = Message.signal("/test", "com.test.Iface", "Broadcast",
-        sender: ":1.1",
-        serial: 1
-      )
+      signal =
+        Message.signal("/test", "com.test.Iface", "Broadcast",
+          sender: ":1.1",
+          serial: 1
+        )
 
       Router.route(signal, self())
       Process.sleep(50)
@@ -423,10 +430,11 @@ defmodule GaoBus.RouterTest do
       # peer2 subscribes to a different signal
       MatchRules.add_match(peer2, "type='signal',interface='com.test.Other',member='Other'")
 
-      signal = Message.signal("/test", "com.test.Specific", "Matched",
-        sender: ":1.1",
-        serial: 1
-      )
+      signal =
+        Message.signal("/test", "com.test.Specific", "Matched",
+          sender: ":1.1",
+          serial: 1
+        )
 
       Router.route(signal, self())
       Process.sleep(50)
