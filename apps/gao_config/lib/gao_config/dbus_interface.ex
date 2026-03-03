@@ -22,7 +22,7 @@ defmodule GaoConfig.DBusInterface do
   @behaviour ExDBus.Object
 
   alias ExDBus.Introspection
-  alias ExDBus.Introspection.{Method, Signal, Arg}
+  alias ExDBus.Introspection.{Arg, Method, Signal}
 
   @interface "org.gaoos.Config1"
   @version "0.1.0"

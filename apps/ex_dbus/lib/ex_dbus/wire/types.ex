@@ -25,6 +25,30 @@ defmodule ExDBus.Wire.Types do
     h → unix_fd     (integer, file descriptor number)
   """
 
+  @type basic_type ::
+          :byte
+          | :boolean
+          | :int16
+          | :uint16
+          | :int32
+          | :uint32
+          | :int64
+          | :uint64
+          | :double
+          | :string
+          | :object_path
+          | :signature
+          | :unix_fd
+          | :variant
+
+  @type dbus_type ::
+          basic_type()
+          | {:array, dbus_type()}
+          | {:struct, [dbus_type()]}
+          | {:dict_entry, dbus_type(), dbus_type()}
+
+  @type endianness :: :little | :big
+
   @doc """
   Parse a D-Bus type signature string into an AST.
 
@@ -44,6 +68,7 @@ defmodule ExDBus.Wire.Types do
       iex> ExDBus.Wire.Types.parse_signature("(isi)")
       {:ok, {:struct, [:int32, :string, :int32]}}
   """
+  @spec parse_signature(String.t()) :: {:ok, dbus_type()} | {:error, term()}
   def parse_signature(sig) when is_binary(sig) do
     case parse_signature_impl(sig, 0) do
       {:ok, type, ""} -> {:ok, type}
@@ -138,6 +163,7 @@ defmodule ExDBus.Wire.Types do
       iex> ExDBus.Wire.Types.serialize_signature({:struct, [:int32, :string, :int32]})
       "(isi)"
   """
+  @spec serialize_signature(dbus_type()) :: String.t()
   def serialize_signature(type) do
     serialize_impl(type)
   end
@@ -166,7 +192,7 @@ defmodule ExDBus.Wire.Types do
   end
 
   defp serialize_impl({:struct, types}) do
-    "(" <> (types |> Enum.map(&serialize_impl/1) |> Enum.join()) <> ")"
+    "(" <> Enum.map_join(types, &serialize_impl/1) <> ")"
   end
 
   @doc """
@@ -186,6 +212,7 @@ defmodule ExDBus.Wire.Types do
       iex> ExDBus.Wire.Types.alignment({:array, :int32})
       4
   """
+  @spec alignment(dbus_type()) :: pos_integer()
   def alignment(:byte), do: 1
   def alignment(:boolean), do: 4
   def alignment(:int16), do: 2
@@ -227,10 +254,11 @@ defmodule ExDBus.Wire.Types do
       iex> ExDBus.Wire.Types.valid?(:variant, {"i", 42})
       true
   """
+  @spec valid?(dbus_type(), term()) :: boolean()
   def valid?(:byte, v), do: is_integer(v) and v >= 0 and v <= 255
   def valid?(:boolean, v), do: is_boolean(v)
-  def valid?(:int16, v), do: is_integer(v) and v >= -32768 and v <= 32767
-  def valid?(:uint16, v), do: is_integer(v) and v >= 0 and v <= 65535
+  def valid?(:int16, v), do: is_integer(v) and v >= -32_768 and v <= 32_767
+  def valid?(:uint16, v), do: is_integer(v) and v >= 0 and v <= 65_535
   def valid?(:int32, v), do: is_integer(v) and v >= -2_147_483_648 and v <= 2_147_483_647
   def valid?(:uint32, v), do: is_integer(v) and v >= 0 and v <= 4_294_967_295
   def valid?(:int64, v), do: is_integer(v) and v >= -9_223_372_036_854_775_808 and v <= 9_223_372_036_854_775_807
@@ -266,6 +294,7 @@ defmodule ExDBus.Wire.Types do
       iex> ExDBus.Wire.Types.parse_types("a{sv}i")
       {:ok, [{:array, {:dict_entry, :string, :variant}}, :int32]}
   """
+  @spec parse_types(String.t()) :: {:ok, [dbus_type()]} | {:error, term()}
   def parse_types(""), do: {:ok, []}
 
   def parse_types(sig) when is_binary(sig) do

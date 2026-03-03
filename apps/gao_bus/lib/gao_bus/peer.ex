@@ -18,6 +18,7 @@ defmodule GaoBus.Peer do
   use GenServer
 
   alias ExDBus.Message
+  alias GaoBus.Policy.Capability
 
   require Logger
 
@@ -190,8 +191,8 @@ defmodule GaoBus.Peer do
 
       # Set up default capabilities based on credentials
       creds = Map.put(state.credentials || %{}, :unique_name, name)
-      if Process.whereis(GaoBus.Policy.Capability) do
-        GaoBus.Policy.Capability.setup_defaults(name, creds)
+      if Process.whereis(Capability) do
+        Capability.setup_defaults(name, creds)
       end
 
       {:reply, name, %{state | unique_name: name, credentials: creds}}
@@ -408,15 +409,14 @@ defmodule GaoBus.Peer do
   end
 
   defp decode_hex_uid(hex_string) do
-    try do
-      uid_string = Base.decode16!(hex_string, case: :mixed)
-      case Integer.parse(uid_string) do
-        {uid, ""} -> {:ok, uid}
-        _ -> :error
-      end
-    rescue
+    uid_string = Base.decode16!(hex_string, case: :mixed)
+
+    case Integer.parse(uid_string) do
+      {uid, ""} -> {:ok, uid}
       _ -> :error
     end
+  rescue
+    _ -> :error
   end
 
   defp cleanup(state) do
@@ -425,8 +425,8 @@ defmodule GaoBus.Peer do
       GaoBus.NameRegistry.peer_disconnected(self())
       GaoBus.MatchRules.peer_disconnected(self())
 
-      if Process.whereis(GaoBus.Policy.Capability) do
-        GaoBus.Policy.Capability.peer_disconnected(state.unique_name)
+      if Process.whereis(Capability) do
+        Capability.peer_disconnected(state.unique_name)
       end
 
       GaoBus.Router.unregister_peer(self())

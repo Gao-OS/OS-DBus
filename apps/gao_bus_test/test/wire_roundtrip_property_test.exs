@@ -2,7 +2,7 @@ defmodule GaoBusTest.WireRoundtripPropertyTest do
   use ExUnit.Case
   use ExUnitProperties
 
-  alias ExDBus.Wire.{Encoder, Decoder}
+  alias ExDBus.Wire.{Decoder, Encoder}
 
   defp roundtrip(value, type, endianness \\ :little) do
     encoded = Encoder.encode(value, type, endianness) |> IO.iodata_to_binary()
@@ -15,8 +15,8 @@ defmodule GaoBusTest.WireRoundtripPropertyTest do
 
   defp gen_byte, do: integer(0..255)
   defp gen_boolean, do: boolean()
-  defp gen_int16, do: integer(-32768..32767)
-  defp gen_uint16, do: integer(0..65535)
+  defp gen_int16, do: integer(-32_768..32_767)
+  defp gen_uint16, do: integer(0..65_535)
   defp gen_int32, do: integer(-2_147_483_648..2_147_483_647)
   defp gen_uint32, do: integer(0..4_294_967_295)
   defp gen_int64, do: integer(-9_223_372_036_854_775_808..9_223_372_036_854_775_807)

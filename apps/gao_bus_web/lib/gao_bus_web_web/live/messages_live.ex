@@ -240,12 +240,18 @@ defmodule GaoBusWebWeb.MessagesLive do
   end
 
   defp matches_filter?(msg, assigns) do
-    (assigns.filter_type == "" or to_string(msg.type) == assigns.filter_type) and
-      (assigns.filter_sender == "" or contains?(msg.sender, assigns.filter_sender)) and
-      (assigns.filter_dest == "" or contains?(msg.destination, assigns.filter_dest)) and
-      (assigns.filter_interface == "" or contains?(msg.interface, assigns.filter_interface)) and
-      (assigns.filter_member == "" or contains?(msg.member, assigns.filter_member))
+    matches_type?(msg, assigns.filter_type) and
+      matches_field?(msg.sender, assigns.filter_sender) and
+      matches_field?(msg.destination, assigns.filter_dest) and
+      matches_field?(msg.interface, assigns.filter_interface) and
+      matches_field?(msg.member, assigns.filter_member)
   end
+
+  defp matches_type?(_msg, ""), do: true
+  defp matches_type?(msg, filter), do: to_string(msg.type) == filter
+
+  defp matches_field?(_value, ""), do: true
+  defp matches_field?(value, filter), do: contains?(value, filter)
 
   defp contains?(nil, _filter), do: false
   defp contains?(value, filter), do: String.contains?(value, filter)

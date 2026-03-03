@@ -250,37 +250,11 @@ defmodule GaoBus.NameRegistry do
 
   @impl true
   def handle_cast({:peer_disconnected, peer_pid}, state) do
-    # Release all names owned by this peer
     owned = :ets.lookup(state.pid_names, peer_pid)
 
     for {_pid, name} <- owned do
-      case :ets.lookup(state.names, name) do
-        [{^name, ^peer_pid, unique_name, _flags, queue}] ->
-          case queue do
-            [] ->
-              :ets.delete(state.names, name)
-              emit_name_owner_changed(name, unique_name, "")
-
-            [{next_pid, next_unique, next_flags} | rest] ->
-              :ets.insert(state.names, {name, next_pid, next_unique, next_flags, rest})
-              :ets.insert(state.pid_names, {next_pid, name})
-              emit_name_owner_changed(name, unique_name, next_unique)
-          end
-
-        _ ->
-          # Remove from queue if queued
-          remove_from_queue(state.names, name, peer_pid)
-      end
-
-      # Also remove unique name entry
-      case :ets.lookup(state.uniques, name) do
-        [{^name, ^peer_pid}] ->
-          :ets.delete(state.uniques, name)
-          emit_name_owner_changed(name, name, "")
-
-        _ ->
-          :ok
-      end
+      release_owned_name(state, name, peer_pid)
+      release_unique_name(state, name, peer_pid)
     end
 
     :ets.delete(state.pid_names, peer_pid)
@@ -288,6 +262,36 @@ defmodule GaoBus.NameRegistry do
   end
 
   # --- Helpers ---
+
+  defp release_owned_name(state, name, peer_pid) do
+    case :ets.lookup(state.names, name) do
+      [{^name, ^peer_pid, unique_name, _flags, queue}] ->
+        case queue do
+          [] ->
+            :ets.delete(state.names, name)
+            emit_name_owner_changed(name, unique_name, "")
+
+          [{next_pid, next_unique, next_flags} | rest] ->
+            :ets.insert(state.names, {name, next_pid, next_unique, next_flags, rest})
+            :ets.insert(state.pid_names, {next_pid, name})
+            emit_name_owner_changed(name, unique_name, next_unique)
+        end
+
+      _ ->
+        remove_from_queue(state.names, name, peer_pid)
+    end
+  end
+
+  defp release_unique_name(state, name, peer_pid) do
+    case :ets.lookup(state.uniques, name) do
+      [{^name, ^peer_pid}] ->
+        :ets.delete(state.uniques, name)
+        emit_name_owner_changed(name, name, "")
+
+      _ ->
+        :ok
+    end
+  end
 
   defp remove_from_queue(names_table, name, peer_pid) do
     case :ets.lookup(names_table, name) do

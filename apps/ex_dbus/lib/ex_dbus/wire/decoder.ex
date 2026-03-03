@@ -25,6 +25,8 @@ defmodule ExDBus.Wire.Decoder do
       iex> ExDBus.Wire.Decoder.decode(<<5, 0, 0, 0, "hello", 0>>, :string)
       {:ok, "hello", <<>>}
   """
+  @spec decode(binary(), ExDBus.Wire.Types.dbus_type() | String.t(), ExDBus.Wire.Types.endianness()) ::
+          {:ok, term(), binary()} | {:error, term()}
   def decode(binary, type, endianness \\ :little) do
     type = normalize_type(type)
 
@@ -39,6 +41,12 @@ defmodule ExDBus.Wire.Decoder do
 
   Returns `{:ok, value, rest, new_offset}` or `{:error, reason}`.
   """
+  @spec decode_at(
+          binary(),
+          ExDBus.Wire.Types.dbus_type() | String.t(),
+          ExDBus.Wire.Types.endianness(),
+          non_neg_integer()
+        ) :: {:ok, term(), binary(), non_neg_integer()} | {:error, term()}
   def decode_at(binary, type, endianness, offset) do
     type = normalize_type(type)
     decode_impl(binary, type, endianness, offset)
@@ -208,22 +216,14 @@ defmodule ExDBus.Wire.Decoder do
   end
 
   defp decode_impl(binary, :signature, _endianness, offset) do
-    with {:ok, rest, offset} <- consume_padding(binary, offset, 1) do
-      case rest do
-        <<len::unsigned-integer-size(8), rest2::binary>> ->
-          offset = offset + 1
-
-          case rest2 do
-            <<sig::binary-size(len), 0, rest3::binary>> ->
-              {:ok, sig, rest3, offset + len + 1}
-
-            _ ->
-              {:error, {:insufficient_data, :signature}}
-          end
-
-        _ ->
-          {:error, {:insufficient_data, :signature}}
-      end
+    with {:ok, rest, offset} <- consume_padding(binary, offset, 1),
+         <<len::unsigned-integer-size(8), rest2::binary>> <- rest,
+         offset = offset + 1,
+         <<sig::binary-size(len), 0, rest3::binary>> <- rest2 do
+      {:ok, sig, rest3, offset + len + 1}
+    else
+      {:error, _} = err -> err
+      _ -> {:error, {:insufficient_data, :signature}}
     end
   end
 

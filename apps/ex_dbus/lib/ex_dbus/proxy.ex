@@ -26,6 +26,7 @@ defmodule ExDBus.Proxy do
   @doc """
   Create a new proxy for a remote D-Bus object.
   """
+  @spec new(pid() | GenServer.name(), String.t(), String.t()) :: t()
   def new(connection, destination, path \\ "/") do
     %__MODULE__{
       connection: connection,
@@ -39,6 +40,7 @@ defmodule ExDBus.Proxy do
 
   Returns `{:ok, reply_message}` or `{:error, reason}`.
   """
+  @spec call(t(), String.t(), String.t(), keyword()) :: {:ok, Message.t()} | {:error, term()}
   def call(%__MODULE__{} = proxy, interface, method, opts \\ []) do
     signature = Keyword.get(opts, :signature)
     body = Keyword.get(opts, :body, [])
@@ -59,6 +61,8 @@ defmodule ExDBus.Proxy do
 
   Returns `{:ok, {signature, value}}` or `{:error, reason}`.
   """
+  @spec get_property(t(), String.t(), String.t(), keyword()) ::
+          {:ok, {String.t(), term()}} | {:error, term()}
   def get_property(%__MODULE__{} = proxy, interface, property, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 5_000)
 
@@ -77,6 +81,8 @@ defmodule ExDBus.Proxy do
 
   The value must be a `{signature, value}` variant tuple.
   """
+  @spec set_property(t(), String.t(), String.t(), {String.t(), term()}, keyword()) ::
+          {:ok, Message.t()} | {:error, term()}
   def set_property(%__MODULE__{} = proxy, interface, property, {_sig, _val} = variant, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 5_000)
 
@@ -92,6 +98,7 @@ defmodule ExDBus.Proxy do
 
   Returns `{:ok, [{key, {sig, value}}]}` or `{:error, reason}`.
   """
+  @spec get_all_properties(t(), String.t(), keyword()) :: {:ok, list()} | {:error, term()}
   def get_all_properties(%__MODULE__{} = proxy, interface, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 5_000)
 
@@ -110,6 +117,7 @@ defmodule ExDBus.Proxy do
 
   Returns `{:ok, xml_string}` or `{:error, reason}`.
   """
+  @spec introspect(t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def introspect(%__MODULE__{} = proxy, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 5_000)
 
@@ -124,6 +132,7 @@ defmodule ExDBus.Proxy do
   @doc """
   Emit a signal from this proxy's connection.
   """
+  @spec emit_signal(t(), String.t(), String.t(), keyword()) :: :ok
   def emit_signal(%__MODULE__{} = proxy, interface, member, opts \\ []) do
     signature = Keyword.get(opts, :signature)
     body = Keyword.get(opts, :body, [])

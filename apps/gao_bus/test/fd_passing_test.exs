@@ -170,7 +170,7 @@ defmodule GaoBus.FdPassingTest do
 
       # Verify we got the FD in ctrl
       ctrl = Map.get(recv_msg, :ctrl, [])
-      assert length(ctrl) > 0
+      assert ctrl != []
 
       [rights_cmsg | _] = ctrl
       assert rights_cmsg.level == :socket

@@ -22,13 +22,13 @@ defmodule ExDBus.Wire.EncoderTest do
 
     test "encodes int16" do
       assert <<42, 0>> = encode_to_binary(42, :int16)
-      assert <<0, 128>> = encode_to_binary(-32768, :int16)
-      assert <<255, 127>> = encode_to_binary(32767, :int16)
+      assert <<0, 128>> = encode_to_binary(-32_768, :int16)
+      assert <<255, 127>> = encode_to_binary(32_767, :int16)
     end
 
     test "encodes uint16" do
       assert <<42, 0>> = encode_to_binary(42, :uint16)
-      assert <<255, 255>> = encode_to_binary(65535, :uint16)
+      assert <<255, 255>> = encode_to_binary(65_535, :uint16)
     end
 
     test "encodes int32" do

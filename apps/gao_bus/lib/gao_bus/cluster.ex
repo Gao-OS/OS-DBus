@@ -214,26 +214,19 @@ defmodule GaoBus.Cluster do
   # --- Private helpers ---
 
   defp find_remote_owner(name) do
-    if Process.whereis(__MODULE__) do
-      case GenServer.call(__MODULE__, :cluster_names) do
-        names when is_list(names) ->
-          case List.keyfind(names, name, 0) do
-            {^name, remote_node} when remote_node != Kernel.node() ->
-              # Resolve the name on the remote node
-              case :rpc.call(remote_node, GaoBus.NameRegistry, :resolve, [name]) do
-                {:ok, pid} -> {:ok, {remote_node, pid}}
-                _ -> :not_found
-              end
-
-            _ ->
-              :not_found
-          end
-
-        _ ->
-          :not_found
-      end
+    with pid when pid != nil <- Process.whereis(__MODULE__),
+         names when is_list(names) <- GenServer.call(__MODULE__, :cluster_names),
+         {^name, remote_node} when remote_node != Kernel.node() <- List.keyfind(names, name, 0) do
+      resolve_on_remote(remote_node, name)
     else
-      :not_found
+      _ -> :not_found
+    end
+  end
+
+  defp resolve_on_remote(remote_node, name) do
+    case :rpc.call(remote_node, GaoBus.NameRegistry, :resolve, [name]) do
+      {:ok, pid} -> {:ok, {remote_node, pid}}
+      _ -> :not_found
     end
   end
 

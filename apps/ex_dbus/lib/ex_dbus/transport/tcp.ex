@@ -10,9 +10,12 @@ defmodule ExDBus.Transport.TCP do
 
   @behaviour ExDBus.Transport.Behaviour
 
+  @type t :: %__MODULE__{socket: port() | nil}
+
   defstruct [:socket]
 
   @impl true
+  @spec connect(String.t() | {String.t(), non_neg_integer()}, keyword()) :: {:ok, t()} | {:error, term()}
   def connect(address, opts \\ []) do
     {host, port} = parse_address(address)
     timeout = Keyword.get(opts, :timeout, 5_000)
@@ -29,26 +32,31 @@ defmodule ExDBus.Transport.TCP do
   end
 
   @impl true
+  @spec send(t(), iodata()) :: :ok | {:error, term()}
   def send(%__MODULE__{socket: socket}, data) do
     :gen_tcp.send(socket, data)
   end
 
   @impl true
+  @spec recv(t(), non_neg_integer(), timeout()) :: {:ok, binary()} | {:error, term()}
   def recv(%__MODULE__{socket: socket}, length, timeout \\ 5_000) do
     :gen_tcp.recv(socket, length, timeout)
   end
 
   @impl true
+  @spec close(t()) :: :ok
   def close(%__MODULE__{socket: socket}) do
     :gen_tcp.close(socket)
   end
 
   @impl true
+  @spec set_active(t(), :once | true | false) :: :ok | {:error, term()}
   def set_active(%__MODULE__{socket: socket}, mode) do
     :inet.setopts(socket, active: mode)
   end
 
   @impl true
+  @spec socket(t()) :: port()
   def socket(%__MODULE__{socket: socket}), do: socket
 
   @doc """
@@ -59,6 +67,7 @@ defmodule ExDBus.Transport.TCP do
       iex> ExDBus.Transport.TCP.parse_address("tcp:host=localhost,port=12345")
       {"localhost", 12345}
   """
+  @spec parse_address(String.t() | {String.t(), non_neg_integer()}) :: {String.t(), non_neg_integer()}
   def parse_address("tcp:" <> params) do
     kv =
       params

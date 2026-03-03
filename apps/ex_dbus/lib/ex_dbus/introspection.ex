@@ -9,25 +9,36 @@ defmodule ExDBus.Introspection do
   @doc """
   An interface definition with methods, signals, and properties.
   """
+  @type t :: %__MODULE__{
+          name: String.t() | nil,
+          methods: [Method.t()],
+          signals: [Signal.t()],
+          properties: [Property.t()]
+        }
+
   defstruct name: nil, methods: [], signals: [], properties: []
 
   defmodule Method do
     @moduledoc false
+    @type t :: %__MODULE__{name: String.t() | nil, args: [ExDBus.Introspection.Arg.t()]}
     defstruct name: nil, args: []
   end
 
   defmodule Signal do
     @moduledoc false
+    @type t :: %__MODULE__{name: String.t() | nil, args: [ExDBus.Introspection.Arg.t()]}
     defstruct name: nil, args: []
   end
 
   defmodule Property do
     @moduledoc false
+    @type t :: %__MODULE__{name: String.t() | nil, type: String.t() | nil, access: :read | :write | :readwrite}
     defstruct name: nil, type: nil, access: :read
   end
 
   defmodule Arg do
     @moduledoc false
+    @type t :: %__MODULE__{name: String.t() | nil, type: String.t() | nil, direction: :in | :out | nil}
     defstruct name: nil, type: nil, direction: nil
   end
 
@@ -57,6 +68,7 @@ defmodule ExDBus.Introspection do
       iex> String.contains?(xml, "<interface name=\\"com.example.Foo\\">")
       true
   """
+  @spec to_xml(String.t(), [t()], [String.t()]) :: String.t()
   def to_xml(path, interfaces, child_nodes \\ []) do
     [
       ~s(<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n),
@@ -74,6 +86,7 @@ defmodule ExDBus.Introspection do
 
   Returns `{:ok, path, interfaces, child_nodes}` or `{:error, reason}`.
   """
+  @spec from_xml(String.t()) :: {:ok, String.t(), [t()], [String.t()]} | {:error, term()}
   def from_xml(xml) when is_binary(xml) do
     case parse_node(xml) do
       {:ok, _path, _interfaces, _children} = result -> result
@@ -84,6 +97,7 @@ defmodule ExDBus.Introspection do
   @doc """
   Standard org.freedesktop.DBus.Introspectable interface definition.
   """
+  @spec introspectable_interface() :: t()
   def introspectable_interface do
     %__MODULE__{
       name: "org.freedesktop.DBus.Introspectable",
@@ -99,6 +113,7 @@ defmodule ExDBus.Introspection do
   @doc """
   Standard org.freedesktop.DBus.Properties interface definition.
   """
+  @spec properties_interface() :: t()
   def properties_interface do
     %__MODULE__{
       name: "org.freedesktop.DBus.Properties",
@@ -143,6 +158,7 @@ defmodule ExDBus.Introspection do
   @doc """
   Standard org.freedesktop.DBus.Peer interface definition.
   """
+  @spec peer_interface() :: t()
   def peer_interface do
     %__MODULE__{
       name: "org.freedesktop.DBus.Peer",
@@ -159,6 +175,7 @@ defmodule ExDBus.Introspection do
   @doc """
   The org.freedesktop.DBus interface definition for the bus itself.
   """
+  @spec bus_interface() :: t()
   def bus_interface do
     %__MODULE__{
       name: "org.freedesktop.DBus",

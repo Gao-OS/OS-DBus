@@ -37,23 +37,36 @@ defmodule GaoBus.BusInterface do
       {"org.freedesktop.DBus.Properties", "GetAll"} ->
         handle_properties_get_all(msg, from_peer_pid, state)
 
-      {_, "Hello"} -> handle_hello(msg, from_peer_pid, state)
-      {_, "RequestName"} -> handle_request_name(msg, from_peer_pid, state)
-      {_, "ReleaseName"} -> handle_release_name(msg, from_peer_pid, state)
-      {_, "GetNameOwner"} -> handle_get_name_owner(msg, from_peer_pid, state)
-      {_, "ListNames"} -> handle_list_names(msg, from_peer_pid, state)
-      {_, "ListActivatableNames"} -> handle_list_activatable_names(msg, from_peer_pid, state)
-      {_, "NameHasOwner"} -> handle_name_has_owner(msg, from_peer_pid, state)
-      {_, "AddMatch"} -> handle_add_match(msg, from_peer_pid, state)
-      {_, "RemoveMatch"} -> handle_remove_match(msg, from_peer_pid, state)
-      {_, "GetId"} -> handle_get_id(msg, from_peer_pid, state)
-      _ -> {make_error(msg, "org.freedesktop.DBus.Error.UnknownMethod",
-              "Unknown method: #{msg.member}", state), state}
+      _ ->
+        dispatch_bus_method(msg, from_peer_pid, state)
     end
   end
 
   def handle_message(_msg, _from_peer_pid, state) do
     {nil, state}
+  end
+
+  defp dispatch_bus_method(msg, from_peer_pid, state) do
+    case msg.member do
+      "Hello" -> handle_hello(msg, from_peer_pid, state)
+      "RequestName" -> handle_request_name(msg, from_peer_pid, state)
+      "ReleaseName" -> handle_release_name(msg, from_peer_pid, state)
+      "GetNameOwner" -> handle_get_name_owner(msg, from_peer_pid, state)
+      "ListNames" -> handle_list_names(msg, from_peer_pid, state)
+      _ -> dispatch_bus_method_ext(msg, from_peer_pid, state)
+    end
+  end
+
+  defp dispatch_bus_method_ext(msg, from_peer_pid, state) do
+    case msg.member do
+      "ListActivatableNames" -> handle_list_activatable_names(msg, from_peer_pid, state)
+      "NameHasOwner" -> handle_name_has_owner(msg, from_peer_pid, state)
+      "AddMatch" -> handle_add_match(msg, from_peer_pid, state)
+      "RemoveMatch" -> handle_remove_match(msg, from_peer_pid, state)
+      "GetId" -> handle_get_id(msg, from_peer_pid, state)
+      _ -> {make_error(msg, "org.freedesktop.DBus.Error.UnknownMethod",
+              "Unknown method: #{msg.member}", state), state}
+    end
   end
 
   # --- Method handlers ---

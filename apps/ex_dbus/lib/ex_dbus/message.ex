@@ -28,7 +28,7 @@ defmodule ExDBus.Message do
       9 = UNIX_FDS     (uint32)
   """
 
-  alias ExDBus.Wire.{Encoder, Decoder, Types}
+  alias ExDBus.Wire.{Decoder, Encoder, Types}
 
   @protocol_version 1
 
@@ -87,6 +87,7 @@ defmodule ExDBus.Message do
   @doc """
   Create a method_call message.
   """
+  @spec method_call(String.t(), String.t() | nil, String.t(), keyword()) :: t()
   def method_call(path, interface, member, opts \\ []) do
     %__MODULE__{
       type: :method_call,
@@ -104,6 +105,7 @@ defmodule ExDBus.Message do
   @doc """
   Create a method_return message.
   """
+  @spec method_return(non_neg_integer(), keyword()) :: t()
   def method_return(reply_serial, opts \\ []) do
     %__MODULE__{
       type: :method_return,
@@ -120,6 +122,7 @@ defmodule ExDBus.Message do
   @doc """
   Create an error message.
   """
+  @spec error(String.t(), non_neg_integer(), keyword()) :: t()
   def error(error_name, reply_serial, opts \\ []) do
     %__MODULE__{
       type: :error,
@@ -137,6 +140,7 @@ defmodule ExDBus.Message do
   @doc """
   Create a signal message.
   """
+  @spec signal(String.t(), String.t(), String.t(), keyword()) :: t()
   def signal(path, interface, member, opts \\ []) do
     %__MODULE__{
       type: :signal,
@@ -156,6 +160,7 @@ defmodule ExDBus.Message do
 
   Returns iodata suitable for sending over a transport.
   """
+  @spec encode_message(t(), ExDBus.Wire.Types.endianness()) :: binary()
   def encode_message(%__MODULE__{} = msg, endianness \\ :little) do
     endian_byte = endianness_to_byte(endianness)
     type_byte = type_to_byte(msg.type)
@@ -193,6 +198,7 @@ defmodule ExDBus.Message do
 
   Returns `{:ok, message, rest}` or `{:error, reason}`.
   """
+  @spec decode_message(binary()) :: {:ok, t(), binary()} | {:error, term()}
   def decode_message(binary) when byte_size(binary) < 16 do
     {:error, :insufficient_data}
   end
@@ -254,61 +260,38 @@ defmodule ExDBus.Message do
   # --- Private decode helpers ---
 
   defp decode_message_with_endianness(binary, endianness) do
-    # Decode fixed header fields (after endianness byte)
-    # type(1) + flags(1) + version(1) + body_len(4) + serial(4) = 11 bytes
     <<type_byte::8, flags::8, _version::8, rest::binary>> = binary
 
     with {:ok, msg_type} <- byte_to_type(type_byte),
          {:ok, body_length, rest2} <- decode_raw_uint32(rest, endianness),
-         {:ok, serial, rest3} <- decode_raw_uint32(rest2, endianness) do
-      # Now at offset 12 (1 endian + 3 fixed + 4 body_len + 4 serial)
-      # Decode header fields array
-      offset = 12
+         {:ok, serial, rest3} <- decode_raw_uint32(rest2, endianness),
+         {:ok, fields_list, rest4, offset} <-
+           Decoder.decode_at(rest3, {:array, {:struct, [:byte, :variant]}}, endianness, 12),
+         body_padding = rem(8 - rem(offset, 8), 8),
+         <<_pad::binary-size(body_padding), body_rest::binary>> <- rest4,
+         sig = extract_field_value(fields_list, @field_signature),
+         {body, rest5} <- decode_body(body_rest, sig, body_length, endianness, offset + body_padding) do
+      msg = %__MODULE__{
+        type: msg_type,
+        serial: serial,
+        flags: flags,
+        path: extract_field_value(fields_list, @field_path),
+        interface: extract_field_value(fields_list, @field_interface),
+        member: extract_field_value(fields_list, @field_member),
+        error_name: extract_field_value(fields_list, @field_error_name),
+        reply_serial: extract_field_value(fields_list, @field_reply_serial),
+        destination: extract_field_value(fields_list, @field_destination),
+        sender: extract_field_value(fields_list, @field_sender),
+        signature: sig,
+        unix_fds: extract_field_value(fields_list, @field_unix_fds),
+        body: body
+      }
 
-      case Decoder.decode_at(rest3, {:array, {:struct, [:byte, :variant]}}, endianness, offset) do
-        {:ok, fields_list, rest4, offset} ->
-          # Align to 8 bytes for body
-          body_padding = rem(8 - rem(offset, 8), 8)
-
-          case rest4 do
-            <<_pad::binary-size(body_padding), body_rest::binary>> ->
-              body_offset = offset + body_padding
-
-              # Extract signature from header fields
-              sig = extract_field_value(fields_list, @field_signature)
-
-              # Decode body
-              case decode_body(body_rest, sig, body_length, endianness, body_offset) do
-                :insufficient_data ->
-                  {:error, :insufficient_data}
-
-                {body, rest5} ->
-                  msg = %__MODULE__{
-                    type: msg_type,
-                    serial: serial,
-                    flags: flags,
-                    path: extract_field_value(fields_list, @field_path),
-                    interface: extract_field_value(fields_list, @field_interface),
-                    member: extract_field_value(fields_list, @field_member),
-                    error_name: extract_field_value(fields_list, @field_error_name),
-                    reply_serial: extract_field_value(fields_list, @field_reply_serial),
-                    destination: extract_field_value(fields_list, @field_destination),
-                    sender: extract_field_value(fields_list, @field_sender),
-                    signature: sig,
-                    unix_fds: extract_field_value(fields_list, @field_unix_fds),
-                    body: body
-                  }
-
-                  {:ok, msg, rest5}
-              end
-
-            _ ->
-              {:error, :insufficient_data_for_body_padding}
-          end
-
-        error ->
-          error
-      end
+      {:ok, msg, rest5}
+    else
+      :insufficient_data -> {:error, :insufficient_data}
+      {:error, _} = err -> err
+      _ -> {:error, :insufficient_data_for_body_padding}
     end
   end
 

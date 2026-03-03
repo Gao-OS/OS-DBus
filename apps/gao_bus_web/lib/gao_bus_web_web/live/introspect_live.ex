@@ -182,7 +182,6 @@ defmodule GaoBusWebWeb.IntrospectLive do
   end
 
   defp introspect_via_bus(name, path) do
-    # Route the Introspect call through the bus router directly
     msg =
       Message.method_call(
         path,
@@ -195,29 +194,30 @@ defmodule GaoBusWebWeb.IntrospectLive do
     case GaoBus.NameRegistry.resolve(name) do
       {:ok, peer_pid} ->
         send(peer_pid, {:send_message, %{msg | serial: :erlang.unique_integer([:positive])}})
-
-        # For the bus itself, handle inline
         :timer.sleep(100)
         {:ok, [], []}
 
       {:bus, _pid} ->
-        # Introspect the bus itself
-        state = %{peers: %{}, next_serial: 1}
-        {reply, _state} = GaoBus.BusInterface.handle_message(msg, self(), state)
-
-        if reply && reply.type == :method_return do
-          [xml] = reply.body
-
-          case ExDBus.Introspection.from_xml(xml) do
-            {:ok, _path, interfaces, children} -> {:ok, interfaces, children}
-            {:error, reason} -> {:error, reason}
-          end
-        else
-          {:error, :no_reply}
-        end
+        introspect_bus(msg)
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  defp introspect_bus(msg) do
+    state = %{peers: %{}, next_serial: 1}
+    {reply, _state} = GaoBus.BusInterface.handle_message(msg, self(), state)
+
+    if reply && reply.type == :method_return do
+      [xml] = reply.body
+
+      case ExDBus.Introspection.from_xml(xml) do
+        {:ok, _path, interfaces, children} -> {:ok, interfaces, children}
+        {:error, reason} -> {:error, reason}
+      end
+    else
+      {:error, :no_reply}
     end
   end
 

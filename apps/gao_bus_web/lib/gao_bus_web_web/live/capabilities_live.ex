@@ -1,6 +1,8 @@
 defmodule GaoBusWebWeb.CapabilitiesLive do
   use GaoBusWebWeb, :live_view
 
+  alias GaoBus.Policy.Capability
+
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
@@ -140,12 +142,12 @@ defmodule GaoBusWebWeb.CapabilitiesLive do
   # --- Helpers ---
 
   defp load_peers do
-    if Process.whereis(GaoBus.Policy.Capability) do
+    if Process.whereis(Capability) do
       names = safe_list_names()
 
       names
       |> Enum.filter(&String.starts_with?(&1, ":"))
-      |> Enum.map(fn name -> {name, GaoBus.Policy.Capability.capabilities(name)} end)
+      |> Enum.map(fn name -> {name, Capability.capabilities(name)} end)
       |> Enum.sort_by(fn {name, _} -> name end)
     else
       []

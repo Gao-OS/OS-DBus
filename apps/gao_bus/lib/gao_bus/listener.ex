@@ -42,25 +42,7 @@ defmodule GaoBus.Listener do
     case :socket.accept(state.listen_socket, 1_000) do
       {:ok, client_socket} ->
         Logger.debug("GaoBus.Listener: accepted connection")
-
-        case GaoBus.PeerSupervisor.start_peer(client_socket) do
-          {:ok, peer_pid} ->
-            # Transfer socket ownership to the peer process BEFORE signaling ready.
-            # Without this, if the Listener dies, the socket would be closed
-            # since the Listener is the owner after accept().
-            case :socket.setopt(client_socket, {:otp, :controlling_process}, peer_pid) do
-              :ok ->
-                send(peer_pid, :socket_ready)
-
-              {:error, reason} ->
-                Logger.error("GaoBus.Listener: failed to transfer socket: #{inspect(reason)}")
-                :socket.close(client_socket)
-            end
-
-          {:error, reason} ->
-            Logger.error("GaoBus.Listener: failed to start peer: #{inspect(reason)}")
-            :socket.close(client_socket)
-        end
+        hand_off_socket(client_socket)
 
       {:error, :timeout} ->
         :ok
@@ -75,6 +57,24 @@ defmodule GaoBus.Listener do
 
   def handle_info(_msg, state) do
     {:noreply, state}
+  end
+
+  defp hand_off_socket(client_socket) do
+    case GaoBus.PeerSupervisor.start_peer(client_socket) do
+      {:ok, peer_pid} ->
+        case :socket.setopt(client_socket, {:otp, :controlling_process}, peer_pid) do
+          :ok ->
+            send(peer_pid, :socket_ready)
+
+          {:error, reason} ->
+            Logger.error("GaoBus.Listener: failed to transfer socket: #{inspect(reason)}")
+            :socket.close(client_socket)
+        end
+
+      {:error, reason} ->
+        Logger.error("GaoBus.Listener: failed to start peer: #{inspect(reason)}")
+        :socket.close(client_socket)
+    end
   end
 
   @impl true

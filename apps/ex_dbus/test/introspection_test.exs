@@ -2,7 +2,7 @@ defmodule ExDBus.IntrospectionTest do
   use ExUnit.Case
 
   alias ExDBus.Introspection
-  alias ExDBus.Introspection.{Method, Signal, Property, Arg}
+  alias ExDBus.Introspection.{Arg, Method, Property, Signal}
 
   describe "to_xml/3" do
     test "generates minimal node" do

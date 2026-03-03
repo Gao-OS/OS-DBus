@@ -145,9 +145,11 @@ defmodule GaoConfig.ConfigStore do
   end
 
   defp notify_change(section, key, value) do
-    # Broadcast via PubSub if gao_bus is available (use apply to avoid compile-time dep)
-    if Code.ensure_loaded?(GaoBus.PubSub) and function_exported?(GaoBus.PubSub, :broadcast, 1) do
-      apply(GaoBus.PubSub, :broadcast, [{:config_changed, section, key, value}])
+    pubsub = GaoBus.PubSub
+
+    if Code.ensure_loaded?(pubsub) and function_exported?(pubsub, :broadcast, 1) do
+      # Dynamic dispatch to avoid compile-time dependency on gao_bus
+      Kernel.apply(pubsub, :broadcast, [{:config_changed, section, key, value}])
     end
   end
 end

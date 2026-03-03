@@ -1,8 +1,8 @@
 defmodule ExDBus.ObjectTest do
   use ExUnit.Case
 
-  alias ExDBus.{Object, Message, Introspection}
-  alias ExDBus.Introspection.{Method, Arg}
+  alias ExDBus.{Introspection, Message, Object}
+  alias ExDBus.Introspection.{Arg, Method}
 
   # Test object implementation
   defmodule TestObject do

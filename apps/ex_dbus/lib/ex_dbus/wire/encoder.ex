@@ -22,6 +22,8 @@ defmodule ExDBus.Wire.Encoder do
       iex> encode("hello", :string) |> IO.iodata_to_binary()
       <<5, 0, 0, 0, 104, 101, 108, 108, 111, 0>>
   """
+  @spec encode(term(), ExDBus.Wire.Types.dbus_type() | String.t(), ExDBus.Wire.Types.endianness()) ::
+          iodata()
   def encode(value, type, endianness \\ :little) do
     type = normalize_type(type)
     encode_impl(value, type, endianness, 0)
@@ -32,6 +34,12 @@ defmodule ExDBus.Wire.Encoder do
 
   Returns `{iolist, new_offset}` where new_offset is the position after encoding.
   """
+  @spec encode_at(
+          term(),
+          ExDBus.Wire.Types.dbus_type() | String.t(),
+          ExDBus.Wire.Types.endianness(),
+          non_neg_integer()
+        ) :: {iodata(), non_neg_integer()}
   def encode_at(value, type, endianness, offset) do
     type = normalize_type(type)
     iolist = encode_impl(value, type, endianness, offset)

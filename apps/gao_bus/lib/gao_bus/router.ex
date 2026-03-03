@@ -10,6 +10,7 @@ defmodule GaoBus.Router do
   use GenServer
 
   alias ExDBus.Message
+  alias GaoBus.Policy.Capability
 
   require Logger
 
@@ -145,35 +146,9 @@ defmodule GaoBus.Router do
         state
 
       {:error, :name_not_found} ->
-        # Try cluster routing if enabled
-        case try_cluster_route(msg) do
-          {:ok, :forwarded} ->
-            state
-
-          _ ->
-            # Send error back to caller
-            {serial, state} = next_serial(state)
-
-            error =
-              Message.error(
-                "org.freedesktop.DBus.Error.ServiceUnknown",
-                msg.serial,
-                serial: serial,
-                destination: msg.sender,
-                signature: "s",
-                body: ["The name #{dest} was not provided by any .service files"]
-              )
-
-            case GaoBus.NameRegistry.resolve(msg.sender) do
-              {:ok, sender_pid} -> send(sender_pid, {:send_message, error})
-              _ -> :ok
-            end
-
-            state
-        end
+        route_or_error(msg, state)
 
       {:bus, _} ->
-        # This shouldn't happen (already handled above), but just in case
         state
     end
   end
@@ -218,15 +193,13 @@ defmodule GaoBus.Router do
   end
 
   defp has_match_rules?(pid) do
-    try do
-      :ets.match(:gao_bus_match_rules, {pid, :_, :_, :_}) != []
-    catch
-      :error, :badarg -> false
-    end
+    :ets.match(:gao_bus_match_rules, {pid, :_, :_, :_}) != []
+  catch
+    :error, :badarg -> false
   end
 
   defp check_policy(message, from_peer_pid) do
-    if Process.whereis(GaoBus.Policy.Capability) do
+    if Process.whereis(Capability) do
       credentials =
         try do
           GaoBus.Peer.get_credentials(from_peer_pid) || %{}
@@ -243,7 +216,7 @@ defmodule GaoBus.Router do
         path: message.path
       }
 
-      GaoBus.Policy.Capability.check_send(credentials, message_info)
+      Capability.check_send(credentials, message_info)
     else
       :allow
     end
@@ -254,6 +227,33 @@ defmodule GaoBus.Router do
       GaoBus.Cluster.route_remote(msg)
     else
       {:error, :not_found}
+    end
+  end
+
+  defp route_or_error(msg, state) do
+    case try_cluster_route(msg) do
+      {:ok, :forwarded} ->
+        state
+
+      _ ->
+        {serial, state} = next_serial(state)
+
+        error =
+          Message.error(
+            "org.freedesktop.DBus.Error.ServiceUnknown",
+            msg.serial,
+            serial: serial,
+            destination: msg.sender,
+            signature: "s",
+            body: ["The name #{msg.destination} was not provided by any .service files"]
+          )
+
+        case GaoBus.NameRegistry.resolve(msg.sender) do
+          {:ok, sender_pid} -> send(sender_pid, {:send_message, error})
+          _ -> :ok
+        end
+
+        state
     end
   end
 

@@ -58,12 +58,10 @@ defmodule GaoBus.Policy.Capability do
   """
   @spec capabilities(String.t()) :: [tuple()]
   def capabilities(unique_name) do
-    try do
-      :ets.lookup(@table, unique_name)
-      |> Enum.map(fn {_, cap} -> cap end)
-    catch
-      :error, :badarg -> []
-    end
+    :ets.lookup(@table, unique_name)
+    |> Enum.map(fn {_, cap} -> cap end)
+  catch
+    :error, :badarg -> []
   end
 
   @doc """

@@ -88,8 +88,8 @@ defmodule GaoBusWebWeb do
       import GaoBusWebWeb.CoreComponents
 
       # Common modules used in templates
-      alias Phoenix.LiveView.JS
       alias GaoBusWebWeb.Layouts
+      alias Phoenix.LiveView.JS
 
       # Routes generation with the ~p sigil
       unquote(verified_routes())

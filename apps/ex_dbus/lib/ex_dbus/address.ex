@@ -25,6 +25,9 @@ defmodule ExDBus.Address do
       iex> ExDBus.Address.parse("tcp:host=localhost,port=12345")
       {:ok, [{:tcp, %{"host" => "localhost", "port" => "12345"}}]}
   """
+  @type parsed_address :: {atom(), %{optional(String.t()) => String.t()}}
+
+  @spec parse(String.t()) :: {:ok, [parsed_address()]} | {:error, term()}
   def parse(address) when is_binary(address) do
     addresses =
       address
@@ -42,20 +45,8 @@ defmodule ExDBus.Address do
   defp parse_single(addr) do
     case String.split(addr, ":", parts: 2) do
       [transport, params_str] ->
-        transport_atom = String.to_atom(transport)
-
-        params =
-          params_str
-          |> String.split(",")
-          |> Enum.reject(&(&1 == ""))
-          |> Enum.map(fn kv ->
-            case String.split(kv, "=", parts: 2) do
-              [k, v] -> {k, unescape(v)}
-              [k] -> {k, ""}
-            end
-          end)
-          |> Enum.into(%{})
-
+        transport_atom = to_transport_atom(transport)
+        params = parse_params(params_str)
         {:ok, {transport_atom, params}}
 
       _ ->
@@ -68,6 +59,7 @@ defmodule ExDBus.Address do
 
   Checks `DBUS_SYSTEM_BUS_ADDRESS` env var, falls back to the standard path.
   """
+  @spec system_bus() :: String.t()
   def system_bus do
     System.get_env("DBUS_SYSTEM_BUS_ADDRESS") ||
       "unix:path=/var/run/dbus/system_bus_socket"
@@ -78,6 +70,7 @@ defmodule ExDBus.Address do
 
   Reads from `DBUS_SESSION_BUS_ADDRESS` env var.
   """
+  @spec session_bus() :: String.t() | nil
   def session_bus do
     System.get_env("DBUS_SESSION_BUS_ADDRESS")
   end
@@ -85,6 +78,7 @@ defmodule ExDBus.Address do
   @doc """
   Determine the transport module for a parsed address.
   """
+  @spec transport_for(parsed_address()) :: module() | {:error, {:unknown_transport, atom()}}
   def transport_for({:unix, _params}), do: ExDBus.Transport.UnixSocket
   def transport_for({:tcp, _params}), do: ExDBus.Transport.TCP
   def transport_for({type, _}), do: {:error, {:unknown_transport, type}}
@@ -92,6 +86,7 @@ defmodule ExDBus.Address do
   @doc """
   Convert a parsed address back to a connection string for the transport.
   """
+  @spec to_connect_string(parsed_address()) :: String.t()
   def to_connect_string({:unix, params}) do
     parts = Enum.map_join(params, ",", fn {k, v} -> "#{k}=#{v}" end)
     "unix:#{parts}"
@@ -102,7 +97,26 @@ defmodule ExDBus.Address do
     "tcp:#{parts}"
   end
 
-  # D-Bus address values use %xx hex escaping
+  @known_transports ~w(unix tcp nonce-tcp unixexec launchd autolaunch)
+  defp to_transport_atom(transport) when transport in @known_transports do
+    String.to_existing_atom(transport)
+  end
+
+  defp to_transport_atom(transport), do: String.to_atom(transport)
+
+  defp parse_params(params_str) do
+    params_str
+    |> String.split(",")
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.map(fn kv ->
+      case String.split(kv, "=", parts: 2) do
+        [k, v] -> {k, unescape(v)}
+        [k] -> {k, ""}
+      end
+    end)
+    |> Enum.into(%{})
+  end
+
   defp unescape(value) do
     Regex.replace(~r/%([0-9a-fA-F]{2})/, value, fn _, hex ->
       <<String.to_integer(hex, 16)>>

@@ -5,7 +5,7 @@ defmodule ExDBus.Transport.TCPTest do
 
   describe "parse_address/1" do
     test "parses tcp address string" do
-      assert TCP.parse_address("tcp:host=localhost,port=12345") == {"localhost", 12345}
+      assert TCP.parse_address("tcp:host=localhost,port=12345") == {"localhost", 12_345}
     end
 
     test "defaults host to localhost" do
@@ -24,7 +24,7 @@ defmodule ExDBus.Transport.TCPTest do
   describe "connect/2" do
     test "returns error for connection refused" do
       # Use a port that's very unlikely to be listening
-      assert {:error, {:connect_failed, _reason, {"localhost", 19999}}} =
+      assert {:error, {:connect_failed, _reason, {"localhost", 19_999}}} =
                TCP.connect("tcp:host=localhost,port=19999", timeout: 500)
     end
   end

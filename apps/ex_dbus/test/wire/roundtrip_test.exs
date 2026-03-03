@@ -1,7 +1,7 @@
 defmodule ExDBus.Wire.RoundtripTest do
   use ExUnit.Case
 
-  alias ExDBus.Wire.{Encoder, Decoder}
+  alias ExDBus.Wire.{Decoder, Encoder}
 
   # Encode then decode and verify equality
   defp roundtrip(value, type, endianness \\ :little) do
@@ -24,13 +24,13 @@ defmodule ExDBus.Wire.RoundtripTest do
     end
 
     test "int16 values" do
-      for v <- [-32768, -1, 0, 1, 32767] do
+      for v <- [-32_768, -1, 0, 1, 32_767] do
         assert roundtrip(v, :int16) == v
       end
     end
 
     test "uint16 values" do
-      for v <- [0, 1, 255, 32768, 65535] do
+      for v <- [0, 1, 255, 32_768, 65_535] do
         assert roundtrip(v, :uint16) == v
       end
     end
@@ -164,8 +164,14 @@ defmodule ExDBus.Wire.RoundtripTest do
     end
 
     test "struct with all basic types" do
-      value = {255, true, 1000, 50000, -42, 100_000, 999, 18_446_744_073_709_551_615, 3.14, "test", "/org/test", 7}
-      type = {:struct, [:byte, :boolean, :int16, :uint16, :int32, :uint32, :int64, :uint64, :double, :string, :object_path, :unix_fd]}
+      value =
+        {255, true, 1_000, 50_000, -42, 100_000, 999, 18_446_744_073_709_551_615, 3.14, "test",
+         "/org/test", 7}
+
+      type =
+        {:struct,
+         [:byte, :boolean, :int16, :uint16, :int32, :uint32, :int64, :uint64, :double, :string,
+          :object_path, :unix_fd]}
       assert roundtrip(value, type) == value
     end
 

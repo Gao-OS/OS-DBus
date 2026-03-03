@@ -71,6 +71,7 @@ defmodule ExDBus.Object do
 
   Returns `{:ok, reply_message}` or `{:error, error_message}`.
   """
+  @spec dispatch(Message.t(), module()) :: {:ok, Message.t()} | {:error, Message.t()}
   def dispatch(%Message{type: :method_call} = msg, object_mod) do
     cond do
       msg.interface == "org.freedesktop.DBus.Introspectable" and msg.member == "Introspect" ->
@@ -112,83 +113,68 @@ defmodule ExDBus.Object do
     Code.ensure_loaded(object_mod)
 
     case msg.member do
-      "Get" ->
-        [interface, property] = msg.body
-
-        if function_exported?(object_mod, :get_property, 2) do
-          case object_mod.get_property(interface, property) do
-            {:ok, sig, value} ->
-              reply =
-                Message.method_return(msg.serial,
-                  destination: msg.sender,
-                  signature: "v",
-                  body: [{sig, value}]
-                )
-
-              {:ok, reply}
-
-            {:error, error_name, error_msg} ->
-              {:error,
-               Message.error(error_name, msg.serial,
-                 destination: msg.sender,
-                 signature: "s",
-                 body: [error_msg]
-               )}
-          end
-        else
-          {:error,
-           Message.error("org.freedesktop.DBus.Error.UnknownProperty", msg.serial,
-             destination: msg.sender,
-             signature: "s",
-             body: ["Property not found: #{property}"]
-           )}
-        end
-
-      "Set" ->
-        [interface, property, {_sig, value}] = msg.body
-
-        if function_exported?(object_mod, :set_property, 3) do
-          case object_mod.set_property(interface, property, value) do
-            :ok ->
-              {:ok, Message.method_return(msg.serial, destination: msg.sender)}
-
-            {:error, error_name, error_msg} ->
-              {:error,
-               Message.error(error_name, msg.serial,
-                 destination: msg.sender,
-                 signature: "s",
-                 body: [error_msg]
-               )}
-          end
-        else
-          {:error,
-           Message.error("org.freedesktop.DBus.Error.PropertyReadOnly", msg.serial,
-             destination: msg.sender,
-             signature: "s",
-             body: ["Property not writable: #{property}"]
-           )}
-        end
-
-      "GetAll" ->
-        [_interface] = msg.body
-        # Return empty dict if not implemented
-        reply =
-          Message.method_return(msg.serial,
-            destination: msg.sender,
-            signature: "a{sv}",
-            body: [[]]
-          )
-
-        {:ok, reply}
-
-      _ ->
-        {:error,
-         Message.error("org.freedesktop.DBus.Error.UnknownMethod", msg.serial,
-           destination: msg.sender,
-           signature: "s",
-           body: ["Unknown method: #{msg.member}"]
-         )}
+      "Get" -> handle_property_get(msg, object_mod)
+      "Set" -> handle_property_set(msg, object_mod)
+      "GetAll" -> handle_property_get_all(msg)
+      _ -> property_error(msg, "org.freedesktop.DBus.Error.UnknownMethod", "Unknown method: #{msg.member}")
     end
+  end
+
+  defp handle_property_get(msg, object_mod) do
+    [interface, property] = msg.body
+
+    if function_exported?(object_mod, :get_property, 2) do
+      case object_mod.get_property(interface, property) do
+        {:ok, sig, value} ->
+          {:ok,
+           Message.method_return(msg.serial,
+             destination: msg.sender,
+             signature: "v",
+             body: [{sig, value}]
+           )}
+
+        {:error, error_name, error_msg} ->
+          property_error(msg, error_name, error_msg)
+      end
+    else
+      property_error(msg, "org.freedesktop.DBus.Error.UnknownProperty", "Property not found: #{property}")
+    end
+  end
+
+  defp handle_property_set(msg, object_mod) do
+    [interface, property, {_sig, value}] = msg.body
+
+    if function_exported?(object_mod, :set_property, 3) do
+      case object_mod.set_property(interface, property, value) do
+        :ok ->
+          {:ok, Message.method_return(msg.serial, destination: msg.sender)}
+
+        {:error, error_name, error_msg} ->
+          property_error(msg, error_name, error_msg)
+      end
+    else
+      property_error(msg, "org.freedesktop.DBus.Error.PropertyReadOnly", "Property not writable: #{property}")
+    end
+  end
+
+  defp handle_property_get_all(msg) do
+    [_interface] = msg.body
+
+    {:ok,
+     Message.method_return(msg.serial,
+       destination: msg.sender,
+       signature: "a{sv}",
+       body: [[]]
+     )}
+  end
+
+  defp property_error(msg, error_name, error_msg) do
+    {:error,
+     Message.error(error_name, msg.serial,
+       destination: msg.sender,
+       signature: "s",
+       body: [error_msg]
+     )}
   end
 
   defp handle_peer(msg) do

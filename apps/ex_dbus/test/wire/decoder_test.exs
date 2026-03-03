@@ -30,13 +30,13 @@ defmodule ExDBus.Wire.DecoderTest do
 
     test "decodes int16" do
       assert {:ok, 42, <<>>} = Decoder.decode(<<42, 0>>, :int16)
-      assert {:ok, -32768, <<>>} = Decoder.decode(<<0, 128>>, :int16)
-      assert {:ok, 32767, <<>>} = Decoder.decode(<<255, 127>>, :int16)
+      assert {:ok, -32_768, <<>>} = Decoder.decode(<<0, 128>>, :int16)
+      assert {:ok, 32_767, <<>>} = Decoder.decode(<<255, 127>>, :int16)
     end
 
     test "decodes uint16" do
       assert {:ok, 42, <<>>} = Decoder.decode(<<42, 0>>, :uint16)
-      assert {:ok, 65535, <<>>} = Decoder.decode(<<255, 255>>, :uint16)
+      assert {:ok, 65_535, <<>>} = Decoder.decode(<<255, 255>>, :uint16)
     end
 
     test "decodes int32" do

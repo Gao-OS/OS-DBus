@@ -36,7 +36,20 @@ defmodule ExDBus.Connection do
     opts: []
   ]
 
-  @type t :: %__MODULE__{}
+  @type t :: %__MODULE__{
+          transport_mod: module() | nil,
+          transport: term() | nil,
+          auth_mod: module() | nil,
+          auth_state: term() | nil,
+          guid: String.t() | nil,
+          address: String.t() | nil,
+          owner: pid() | nil,
+          state: :disconnected | :connecting | :authenticating | :connected,
+          serial: pos_integer(),
+          pending_calls: %{optional(non_neg_integer()) => GenServer.from()},
+          buffer: binary(),
+          opts: keyword()
+        }
 
   # --- Client API ---
 
@@ -52,6 +65,7 @@ defmodule ExDBus.Connection do
     * `:transport_opts` - Options passed to transport connect
     * `:name` - GenServer name registration
   """
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
     gen_opts = Keyword.take(opts, [:name])
     GenServer.start_link(__MODULE__, opts, gen_opts)
@@ -62,6 +76,8 @@ defmodule ExDBus.Connection do
 
   Assigns a serial number automatically. Returns `{:ok, reply_message}` or `{:error, reason}`.
   """
+  @spec call(GenServer.server(), Message.t(), timeout()) ::
+          {:ok, Message.t()} | {:error, term()}
   def call(conn, %Message{type: :method_call} = msg, timeout \\ 5_000) do
     GenServer.call(conn, {:call, msg}, timeout)
   end
@@ -69,6 +85,7 @@ defmodule ExDBus.Connection do
   @doc """
   Send a message without waiting for a reply (signals, replies, errors).
   """
+  @spec cast(GenServer.server(), Message.t()) :: :ok
   def cast(conn, %Message{} = msg) do
     GenServer.cast(conn, {:send, msg})
   end
@@ -76,6 +93,7 @@ defmodule ExDBus.Connection do
   @doc """
   Send a signal message.
   """
+  @spec send_signal(GenServer.server(), Message.t()) :: :ok
   def send_signal(conn, %Message{type: :signal} = msg) do
     GenServer.cast(conn, {:send, msg})
   end
@@ -83,6 +101,7 @@ defmodule ExDBus.Connection do
   @doc """
   Get the current connection state.
   """
+  @spec get_state(GenServer.server()) :: :disconnected | :connecting | :authenticating | :connected
   def get_state(conn) do
     GenServer.call(conn, :get_state)
   end
@@ -90,6 +109,7 @@ defmodule ExDBus.Connection do
   @doc """
   Get the server GUID obtained during authentication.
   """
+  @spec get_guid(GenServer.server()) :: String.t() | nil
   def get_guid(conn) do
     GenServer.call(conn, :get_guid)
   end
@@ -97,6 +117,7 @@ defmodule ExDBus.Connection do
   @doc """
   Disconnect and stop the connection.
   """
+  @spec disconnect(GenServer.server()) :: :ok
   def disconnect(conn) do
     GenServer.call(conn, :disconnect)
   end

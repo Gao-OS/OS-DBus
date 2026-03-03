@@ -1,8 +1,8 @@
 defmodule GaoBus.MatchRulesTest do
   use ExUnit.Case, async: false
 
-  alias GaoBus.MatchRules
   alias ExDBus.Message
+  alias GaoBus.MatchRules
 
   describe "parse/1" do
     test "parses type filter — signal" do

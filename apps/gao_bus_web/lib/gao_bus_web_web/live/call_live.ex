@@ -79,47 +79,53 @@ defmodule GaoBusWebWeb.CallLive do
     if assigns.service == "" or assigns.method == "" do
       {:noreply, assign(socket, error: "Service and Method are required", result: nil)}
     else
-      socket = assign(socket, calling: true, error: nil, result: nil)
-
-      # Build the method call
-      opts = [destination: assigns.service]
-
-      {opts, arg_error} =
-        if assigns.signature != "" do
-          case parse_args(assigns.args, assigns.signature) do
-            {:ok, body} ->
-              {Keyword.merge(opts, signature: assigns.signature, body: body), nil}
-
-            {:error, reason} ->
-              {opts, reason}
-          end
-        else
-          {opts, nil}
-        end
-
-      if arg_error do
-        {:noreply, assign(socket, error: "Argument error: #{inspect(arg_error)}", calling: false)}
-      else
-        iface = if assigns.interface != "", do: assigns.interface, else: nil
-
-        msg =
-          Message.method_call(
-            assigns.object_path,
-            iface,
-            assigns.method,
-            opts
-          )
-
-        caller = self()
-
-        Task.start(fn ->
-          result = route_call(msg)
-          send(caller, {:call_result, result})
-        end)
-
-        {:noreply, socket}
-      end
+      execute_call(socket, assigns)
     end
+  end
+
+  defp execute_call(socket, assigns) do
+    socket = assign(socket, calling: true, error: nil, result: nil)
+    opts = [destination: assigns.service]
+
+    {opts, arg_error} =
+      if assigns.signature != "" do
+        case parse_args(assigns.args, assigns.signature) do
+          {:ok, body} ->
+            {Keyword.merge(opts, signature: assigns.signature, body: body), nil}
+
+          {:error, reason} ->
+            {opts, reason}
+        end
+      else
+        {opts, nil}
+      end
+
+    if arg_error do
+      {:noreply, assign(socket, error: "Argument error: #{inspect(arg_error)}", calling: false)}
+    else
+      dispatch_call(socket, assigns, opts)
+    end
+  end
+
+  defp dispatch_call(socket, assigns, opts) do
+    iface = if assigns.interface != "", do: assigns.interface, else: nil
+
+    msg =
+      Message.method_call(
+        assigns.object_path,
+        iface,
+        assigns.method,
+        opts
+      )
+
+    caller = self()
+
+    Task.start(fn ->
+      result = route_call(msg)
+      send(caller, {:call_result, result})
+    end)
+
+    {:noreply, socket}
   end
 
   @impl true

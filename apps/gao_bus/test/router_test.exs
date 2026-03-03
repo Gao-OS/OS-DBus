@@ -2,7 +2,7 @@ defmodule GaoBus.RouterTest do
   use ExUnit.Case, async: false
 
   alias ExDBus.Message
-  alias GaoBus.{Router, NameRegistry, MatchRules}
+  alias GaoBus.{MatchRules, NameRegistry, Router}
 
   setup do
     Application.stop(:gao_bus)
