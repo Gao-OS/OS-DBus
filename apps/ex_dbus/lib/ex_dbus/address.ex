@@ -119,7 +119,7 @@ defmodule ExDBus.Address do
         [k] -> {k, ""}
       end
     end)
-    |> Enum.into(%{})
+    |> Map.new()
   end
 
   defp unescape(value) do

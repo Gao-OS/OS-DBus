@@ -78,7 +78,7 @@ defmodule ExDBus.Transport.UnixSocket do
     params
     |> String.split(",")
     |> Enum.map(&String.split(&1, "=", parts: 2))
-    |> Enum.into(%{}, fn
+    |> Map.new(fn
       [k, v] -> {k, v}
       [k] -> {k, ""}
     end)

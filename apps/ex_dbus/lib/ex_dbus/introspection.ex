@@ -19,19 +19,19 @@ defmodule ExDBus.Introspection do
   defstruct name: nil, methods: [], signals: [], properties: []
 
   defmodule Method do
-    @moduledoc false
+    @moduledoc "D-Bus method definition with name, arguments, and annotations."
     @type t :: %__MODULE__{name: String.t() | nil, args: [ExDBus.Introspection.Arg.t()]}
     defstruct name: nil, args: []
   end
 
   defmodule Signal do
-    @moduledoc false
+    @moduledoc "D-Bus signal definition with name and arguments."
     @type t :: %__MODULE__{name: String.t() | nil, args: [ExDBus.Introspection.Arg.t()]}
     defstruct name: nil, args: []
   end
 
   defmodule Property do
-    @moduledoc false
+    @moduledoc "D-Bus property definition with name, type, and access mode."
     @type t :: %__MODULE__{
             name: String.t() | nil,
             type: String.t() | nil,
@@ -41,7 +41,7 @@ defmodule ExDBus.Introspection do
   end
 
   defmodule Arg do
-    @moduledoc false
+    @moduledoc "D-Bus method/signal argument with name, type, and direction."
     @type t :: %__MODULE__{
             name: String.t() | nil,
             type: String.t() | nil,
@@ -97,6 +97,8 @@ defmodule ExDBus.Introspection do
   @spec from_xml(String.t()) :: {:ok, String.t(), [t()], [String.t()]} | {:error, term()}
   def from_xml(xml) when is_binary(xml) do
     parse_node(xml)
+  rescue
+    e -> {:error, e}
   end
 
   @doc """

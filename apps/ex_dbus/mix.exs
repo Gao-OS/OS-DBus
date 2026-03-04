@@ -40,7 +40,7 @@ defmodule ExDbus.MixProject do
     [
       main: "ExDBus",
       source_url: @source_url,
-      extras: ["README.md"]
+      extras: ["README.md", "LICENSE"]
     ]
   end
 

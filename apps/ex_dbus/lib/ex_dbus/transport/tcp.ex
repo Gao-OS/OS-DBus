@@ -75,7 +75,7 @@ defmodule ExDBus.Transport.TCP do
       params
       |> String.split(",")
       |> Enum.map(&String.split(&1, "=", parts: 2))
-      |> Enum.into(%{}, fn [k, v] -> {k, v} end)
+      |> Map.new(fn [k, v] -> {k, v} end)
 
     host = Map.get(kv, "host", "localhost")
     port = Map.get(kv, "port", "0") |> String.to_integer()
