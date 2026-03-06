@@ -2,6 +2,8 @@ defmodule ExDBus.Wire.EncoderTest do
   use ExUnit.Case
   alias ExDBus.Wire.Encoder
 
+  doctest ExDBus.Wire.Encoder
+
   defp encode_to_binary(value, type, endianness \\ :little) do
     value
     |> Encoder.encode(type, endianness)

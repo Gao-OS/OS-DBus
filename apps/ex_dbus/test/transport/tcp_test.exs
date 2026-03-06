@@ -3,6 +3,8 @@ defmodule ExDBus.Transport.TCPTest do
 
   alias ExDBus.Transport.TCP
 
+  doctest ExDBus.Transport.TCP
+
   describe "parse_address/1" do
     test "parses tcp address string" do
       assert TCP.parse_address("tcp:host=localhost,port=12345") == {"localhost", 12_345}

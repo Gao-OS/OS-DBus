@@ -18,7 +18,7 @@ defmodule GaoBus.Application do
         {GaoBus.Listener, socket_path: socket_path}
       ] ++ cluster_child()
 
-    opts = [strategy: :one_for_one, name: GaoBus.Supervisor]
+    opts = [strategy: :rest_for_one, name: GaoBus.Supervisor]
     Supervisor.start_link(children, opts)
   end
 

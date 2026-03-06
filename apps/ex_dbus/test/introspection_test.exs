@@ -4,6 +4,8 @@ defmodule ExDBus.IntrospectionTest do
   alias ExDBus.Introspection
   alias ExDBus.Introspection.{Arg, Method, Property, Signal}
 
+  doctest ExDBus.Introspection
+
   describe "to_xml/3" do
     test "generates minimal node" do
       xml = Introspection.to_xml("/", [])

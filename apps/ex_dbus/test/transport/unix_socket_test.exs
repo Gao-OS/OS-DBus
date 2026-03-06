@@ -3,6 +3,8 @@ defmodule ExDBus.Transport.UnixSocketTest do
 
   alias ExDBus.Transport.UnixSocket
 
+  doctest ExDBus.Transport.UnixSocket
+
   describe "parse_address/1" do
     test "parses unix:path= format" do
       assert UnixSocket.parse_address("unix:path=/var/run/dbus/system_bus_socket") ==

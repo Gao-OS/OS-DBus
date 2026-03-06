@@ -37,10 +37,14 @@ defmodule GaoBus.Router do
 
   @doc """
   Register a peer for signal broadcasting.
+
+  Credentials are cached in the Router state so that policy checks
+  never need to issue a synchronous GenServer.call back to the Peer
+  (which would risk a deadlock inside handle_cast).
   """
-  @spec register_peer(pid(), String.t()) :: :ok
-  def register_peer(peer_pid, unique_name) do
-    GenServer.cast(__MODULE__, {:register_peer, peer_pid, unique_name})
+  @spec register_peer(pid(), String.t(), map()) :: :ok
+  def register_peer(peer_pid, unique_name, credentials \\ %{}) do
+    GenServer.cast(__MODULE__, {:register_peer, peer_pid, unique_name, credentials})
   end
 
   @doc """
@@ -55,7 +59,7 @@ defmodule GaoBus.Router do
 
   @impl true
   def init(_opts) do
-    # peers: %{pid => unique_name}
+    # peers: %{pid => %{unique_name: name, credentials: creds, monitor_ref: ref}}
     {:ok, %{peers: %{}, next_serial: 1}}
   end
 
@@ -63,7 +67,7 @@ defmodule GaoBus.Router do
   def handle_cast({:route, message, from_peer_pid}, state) do
     GaoBus.PubSub.broadcast({:message_routed, message})
 
-    case check_policy(message, from_peer_pid) do
+    case check_policy(message, from_peer_pid, state) do
       :allow ->
         state = do_route(message, from_peer_pid, state)
         {:noreply, state}
@@ -108,17 +112,33 @@ defmodule GaoBus.Router do
     {:noreply, state}
   end
 
-  def handle_cast({:register_peer, peer_pid, unique_name}, state) do
-    Process.monitor(peer_pid)
-    {:noreply, put_in(state.peers[peer_pid], unique_name)}
+  def handle_cast({:register_peer, peer_pid, unique_name, credentials}, state) do
+    ref = Process.monitor(peer_pid)
+
+    peer_info = %{
+      unique_name: unique_name,
+      credentials: credentials,
+      monitor_ref: ref
+    }
+
+    {:noreply, put_in(state.peers[peer_pid], peer_info)}
   end
 
   def handle_cast({:unregister_peer, peer_pid}, state) do
+    case Map.get(state.peers, peer_pid) do
+      %{monitor_ref: ref} ->
+        Process.demonitor(ref, [:flush])
+
+      _ ->
+        :ok
+    end
+
     {:noreply, %{state | peers: Map.delete(state.peers, peer_pid)}}
   end
 
   @impl true
-  def handle_info({:DOWN, _ref, :process, peer_pid, _reason}, state) do
+  def handle_info({:DOWN, ref, :process, peer_pid, _reason}, state) do
+    Process.demonitor(ref, [:flush])
     {:noreply, %{state | peers: Map.delete(state.peers, peer_pid)}}
   end
 
@@ -184,7 +204,7 @@ defmodule GaoBus.Router do
     # Get peers that have matching match rules
     matching_pids = GaoBus.MatchRules.matching_peers(signal) |> MapSet.new()
 
-    for {pid, _name} <- state.peers do
+    for {pid, _info} <- state.peers do
       # Send to peers that either have a matching rule or have no rules (backward compat)
       if MapSet.member?(matching_pids, pid) or not has_match_rules?(pid) do
         send(pid, {:send_message, signal})
@@ -198,13 +218,12 @@ defmodule GaoBus.Router do
     :error, :badarg -> false
   end
 
-  defp check_policy(message, from_peer_pid) do
+  defp check_policy(message, from_peer_pid, state) do
     if Process.whereis(Capability) do
       credentials =
-        try do
-          GaoBus.Peer.get_credentials(from_peer_pid) || %{}
-        catch
-          :exit, _ -> %{}
+        case Map.get(state.peers, from_peer_pid) do
+          %{credentials: creds} when is_map(creds) -> creds
+          _ -> %{}
         end
 
       message_info = %{

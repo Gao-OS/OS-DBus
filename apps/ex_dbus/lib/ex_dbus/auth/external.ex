@@ -54,6 +54,7 @@ defmodule ExDBus.Auth.External do
     end
   end
 
+  @impl true
   @spec handle_line(String.t(), t()) :: {:ok, String.t(), t()} | {:error, term()}
   def handle_line(line, %__MODULE__{state: other}) do
     {:error, {:unexpected_state, other, line}}

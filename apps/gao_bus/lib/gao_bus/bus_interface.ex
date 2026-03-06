@@ -75,12 +75,12 @@ defmodule GaoBus.BusInterface do
         handle_get_id(msg, from_peer_pid, state)
 
       _ ->
-        {make_error(
-           msg,
-           "org.freedesktop.DBus.Error.UnknownMethod",
-           "Unknown method: #{msg.member}",
-           state
-         ), state}
+        make_error(
+          msg,
+          "org.freedesktop.DBus.Error.UnknownMethod",
+          "Unknown method: #{msg.member}",
+          state
+        )
     end
   end
 
@@ -94,16 +94,16 @@ defmodule GaoBus.BusInterface do
       nil ->
         # First Hello — assign name
         name = GaoBus.Peer.assign_unique_name(from_peer_pid)
+        credentials = GaoBus.Peer.get_credentials(from_peer_pid) || %{}
         GaoBus.NameRegistry.register_unique(name, from_peer_pid)
-        GaoBus.Router.register_peer(from_peer_pid, name)
+        GaoBus.Router.register_peer(from_peer_pid, name, credentials)
 
         {reply, state} = make_reply(msg, "s", [name], state)
         {reply, state}
 
       _ ->
         # Already has a name — error per spec
-        {make_error(msg, "org.freedesktop.DBus.Error.Failed", "Already called Hello", state),
-         state}
+        make_error(msg, "org.freedesktop.DBus.Error.Failed", "Already called Hello", state)
     end
   end
 
@@ -135,12 +135,12 @@ defmodule GaoBus.BusInterface do
         {reply, state}
 
       {:error, error_name} ->
-        {make_error(
-           msg,
-           error_name,
-           "The name #{name} was not provided by any .service files",
-           state
-         ), state}
+        make_error(
+          msg,
+          error_name,
+          "The name #{name} was not provided by any .service files",
+          state
+        )
     end
   end
 
@@ -178,12 +178,12 @@ defmodule GaoBus.BusInterface do
         {reply, state}
 
       {:error, reason} ->
-        {make_error(
-           msg,
-           "org.freedesktop.DBus.Error.MatchRuleInvalid",
-           "Invalid match rule: #{inspect(reason)}",
-           state
-         ), state}
+        make_error(
+          msg,
+          "org.freedesktop.DBus.Error.MatchRuleInvalid",
+          "Invalid match rule: #{inspect(reason)}",
+          state
+        )
     end
   end
 
@@ -196,7 +196,7 @@ defmodule GaoBus.BusInterface do
         {reply, state}
 
       {:error, error_name} ->
-        {make_error(msg, error_name, "Match rule not found", state), state}
+        make_error(msg, error_name, "Match rule not found", state)
     end
   end
 
@@ -236,12 +236,12 @@ defmodule GaoBus.BusInterface do
         {reply, state}
 
       _ ->
-        {make_error(
-           msg,
-           "org.freedesktop.DBus.Error.UnknownProperty",
-           "Unknown property: #{property_name}",
-           state
-         ), state}
+        make_error(
+          msg,
+          "org.freedesktop.DBus.Error.UnknownProperty",
+          "Unknown property: #{property_name}",
+          state
+        )
     end
   end
 
@@ -280,15 +280,18 @@ defmodule GaoBus.BusInterface do
   end
 
   defp make_error(msg, error_name, error_msg, state) do
-    {serial, _state} = next_serial(state)
+    {serial, state} = next_serial(state)
 
-    Message.error(error_name, msg.serial,
-      serial: serial,
-      destination: msg.sender,
-      sender: @bus_name,
-      signature: "s",
-      body: [error_msg]
-    )
+    error =
+      Message.error(error_name, msg.serial,
+        serial: serial,
+        destination: msg.sender,
+        sender: @bus_name,
+        signature: "s",
+        body: [error_msg]
+      )
+
+    {error, state}
   end
 
   defp next_serial(state) do

@@ -3,6 +3,8 @@ defmodule ExDBus.AddressTest do
 
   alias ExDBus.Address
 
+  doctest ExDBus.Address
+
   describe "parse/1" do
     test "parses unix path address" do
       assert {:ok, [{:unix, %{"path" => "/var/run/dbus/system_bus_socket"}}]} =

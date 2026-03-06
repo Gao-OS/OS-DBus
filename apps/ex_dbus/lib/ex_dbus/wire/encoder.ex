@@ -15,11 +15,12 @@ defmodule ExDBus.Wire.Encoder do
 
   Returns an iolist that should be flattened to binary via IO.iodata_to_binary/1.
 
-  Examples:
-      iex> encode(42, :int32) |> IO.iodata_to_binary()
+  ## Examples
+
+      iex> ExDBus.Wire.Encoder.encode(42, :int32) |> IO.iodata_to_binary()
       <<42, 0, 0, 0>>
 
-      iex> encode("hello", :string) |> IO.iodata_to_binary()
+      iex> ExDBus.Wire.Encoder.encode("hello", :string) |> IO.iodata_to_binary()
       <<5, 0, 0, 0, 104, 101, 108, 108, 111, 0>>
   """
   @spec encode(term(), ExDBus.Wire.Types.dbus_type() | String.t(), ExDBus.Wire.Types.endianness()) ::
