@@ -5,10 +5,10 @@ defmodule GaoBusTest.InteropTest do
 
   These tests verify that gao_bus is compatible with standard D-Bus clients.
   They require the AUTH handshake to fully match the reference dbus-daemon
-  implementation (SASL EXTERNAL with SO_PEERCRED). Currently, gao_bus accepts
-  auth but the full SASL negotiation may differ from what dbus-send expects.
+  implementation (SASL EXTERNAL with SO_PEERCRED).
 
-  These tests are tagged `:interop` and gracefully skip on connection failures.
+  These tests are tagged `:interop` and excluded by default.
+  Run with: mix test --include interop
   """
   use ExUnit.Case
 
@@ -36,148 +36,128 @@ defmodule GaoBusTest.InteropTest do
   end
 
   describe "dbus-send" do
-    @describetag skip: is_nil(@dbus_send)
+    @describetag skip: if(is_nil(@dbus_send), do: "dbus-send not installed")
 
     test "Hello via dbus-send" do
-      case run_dbus_send([
-             "--print-reply",
-             "--dest=org.freedesktop.DBus",
-             "/org/freedesktop/DBus",
-             "org.freedesktop.DBus.Hello"
-           ]) do
-        {output, 0} ->
-          assert output =~ "string"
-          assert output =~ ":1."
+      {output, code} =
+        run_dbus_send([
+          "--print-reply",
+          "--dest=org.freedesktop.DBus",
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus.Hello"
+        ])
 
-        {_output, _code} ->
-          # dbus-send SASL auth not yet fully compatible — document and skip
-          assert true, "dbus-send interop not yet supported (SASL auth gap)"
-      end
+      assert code == 0, "dbus-send Hello failed (exit #{code}): #{output}"
+      assert output =~ "string"
+      assert output =~ ":1."
     end
 
     test "ListNames via dbus-send" do
-      case run_dbus_send([
-             "--print-reply",
-             "--dest=org.freedesktop.DBus",
-             "/org/freedesktop/DBus",
-             "org.freedesktop.DBus.ListNames"
-           ]) do
-        {output, 0} ->
-          assert output =~ "array"
-          assert output =~ "org.freedesktop.DBus"
+      {output, code} =
+        run_dbus_send([
+          "--print-reply",
+          "--dest=org.freedesktop.DBus",
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus.ListNames"
+        ])
 
-        {_output, _code} ->
-          assert true, "dbus-send interop not yet supported"
-      end
+      assert code == 0, "dbus-send ListNames failed (exit #{code}): #{output}"
+      assert output =~ "array"
+      assert output =~ "org.freedesktop.DBus"
     end
 
     test "GetId via dbus-send" do
-      case run_dbus_send([
-             "--print-reply",
-             "--dest=org.freedesktop.DBus",
-             "/org/freedesktop/DBus",
-             "org.freedesktop.DBus.GetId"
-           ]) do
-        {output, 0} ->
-          assert output =~ "string"
+      {output, code} =
+        run_dbus_send([
+          "--print-reply",
+          "--dest=org.freedesktop.DBus",
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus.GetId"
+        ])
 
-        {_output, _code} ->
-          assert true, "dbus-send interop not yet supported"
-      end
+      assert code == 0, "dbus-send GetId failed (exit #{code}): #{output}"
+      assert output =~ "string"
     end
 
     test "Introspect via dbus-send" do
-      case run_dbus_send([
-             "--print-reply",
-             "--dest=org.freedesktop.DBus",
-             "/org/freedesktop/DBus",
-             "org.freedesktop.DBus.Introspectable.Introspect"
-           ]) do
-        {output, 0} ->
-          assert output =~ "<interface"
-          assert output =~ "org.freedesktop.DBus"
+      {output, code} =
+        run_dbus_send([
+          "--print-reply",
+          "--dest=org.freedesktop.DBus",
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus.Introspectable.Introspect"
+        ])
 
-        {_output, _code} ->
-          assert true, "dbus-send interop not yet supported"
-      end
+      assert code == 0, "dbus-send Introspect failed (exit #{code}): #{output}"
+      assert output =~ "<interface"
+      assert output =~ "org.freedesktop.DBus"
     end
 
     test "NameHasOwner via dbus-send" do
-      case run_dbus_send([
-             "--print-reply",
-             "--dest=org.freedesktop.DBus",
-             "/org/freedesktop/DBus",
-             "org.freedesktop.DBus.NameHasOwner",
-             "string:org.freedesktop.DBus"
-           ]) do
-        {output, 0} ->
-          assert output =~ "boolean true"
+      {output, code} =
+        run_dbus_send([
+          "--print-reply",
+          "--dest=org.freedesktop.DBus",
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus.NameHasOwner",
+          "string:org.freedesktop.DBus"
+        ])
 
-        {_output, _code} ->
-          assert true, "dbus-send interop not yet supported"
-      end
+      assert code == 0, "dbus-send NameHasOwner failed (exit #{code}): #{output}"
+      assert output =~ "boolean true"
     end
   end
 
   describe "busctl" do
-    @describetag skip: is_nil(@busctl)
+    @describetag skip: if(is_nil(@busctl), do: "busctl not installed")
 
     test "busctl list shows bus name" do
-      case run_busctl(["list", "--no-pager"]) do
-        {output, 0} ->
-          assert output =~ "org.freedesktop.DBus"
+      {output, code} = run_busctl(["list", "--no-pager"])
 
-        {_output, _code} ->
-          assert true, "busctl interop not yet supported"
-      end
+      assert code == 0, "busctl list failed (exit #{code}): #{output}"
+      assert output =~ "org.freedesktop.DBus"
     end
 
     test "busctl call Hello" do
-      case run_busctl([
-             "call",
-             "org.freedesktop.DBus",
-             "/org/freedesktop/DBus",
-             "org.freedesktop.DBus",
-             "Hello"
-           ]) do
-        {output, 0} ->
-          assert output =~ ":1."
+      {output, code} =
+        run_busctl([
+          "call",
+          "org.freedesktop.DBus",
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus",
+          "Hello"
+        ])
 
-        {_output, _code} ->
-          assert true, "busctl interop not yet supported"
-      end
+      assert code == 0, "busctl call Hello failed (exit #{code}): #{output}"
+      assert output =~ ":1."
     end
 
     test "busctl call ListNames" do
-      case run_busctl([
-             "call",
-             "org.freedesktop.DBus",
-             "/org/freedesktop/DBus",
-             "org.freedesktop.DBus",
-             "ListNames"
-           ]) do
-        {output, 0} ->
-          assert output =~ "org.freedesktop.DBus"
+      {output, code} =
+        run_busctl([
+          "call",
+          "org.freedesktop.DBus",
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus",
+          "ListNames"
+        ])
 
-        {_output, _code} ->
-          assert true, "busctl interop not yet supported"
-      end
+      assert code == 0, "busctl call ListNames failed (exit #{code}): #{output}"
+      assert output =~ "org.freedesktop.DBus"
     end
 
     test "busctl introspect" do
-      case run_busctl([
-             "introspect",
-             "org.freedesktop.DBus",
-             "/org/freedesktop/DBus",
-             "--no-pager"
-           ]) do
-        {output, 0} ->
-          assert output =~ "Hello"
-          assert output =~ "ListNames"
+      {output, code} =
+        run_busctl([
+          "introspect",
+          "org.freedesktop.DBus",
+          "/org/freedesktop/DBus",
+          "--no-pager"
+        ])
 
-        {_output, _code} ->
-          assert true, "busctl interop not yet supported"
-      end
+      assert code == 0, "busctl introspect failed (exit #{code}): #{output}"
+      assert output =~ "Hello"
+      assert output =~ "ListNames"
     end
   end
 
@@ -189,7 +169,7 @@ defmodule GaoBusTest.InteropTest do
       env: [{"DBUS_SESSION_BUS_ADDRESS", "unix:path=#{@socket_path}"}]
     )
   rescue
-    _ -> {"error", 1}
+    e -> {"helper error: #{Exception.message(e)}", 1}
   end
 
   defp run_busctl(args) do
@@ -201,6 +181,6 @@ defmodule GaoBusTest.InteropTest do
       ]
     )
   rescue
-    _ -> {"error", 1}
+    e -> {"helper error: #{Exception.message(e)}", 1}
   end
 end

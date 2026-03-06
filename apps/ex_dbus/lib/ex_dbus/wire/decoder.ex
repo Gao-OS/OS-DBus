@@ -78,6 +78,15 @@ defmodule ExDBus.Wire.Decoder do
     end
   end
 
+  # Consume alignment padding before array elements (struct/dict_entry need 8-byte alignment)
+  defp consume_array_element_padding(binary, offset, elem_align) when elem_align > 4 do
+    consume_padding(binary, offset, elem_align)
+  end
+
+  defp consume_array_element_padding(binary, offset, _elem_align) do
+    {:ok, binary, offset}
+  end
+
   # --- Basic types ---
 
   defp decode_impl(binary, :byte, _endianness, offset) do
@@ -258,18 +267,11 @@ defmodule ExDBus.Wire.Decoder do
       # For struct/dict_entry arrays, we need to align to 8 bytes before the first element
       elem_align = Types.alignment(elem_type)
 
-      {rest3, offset} =
-        if elem_align > 4 do
-          padding = rem(elem_align - rem(offset, elem_align), elem_align)
-          <<_pad::binary-size(padding), rest3::binary>> = rest2
-          {rest3, offset + padding}
-        else
-          {rest2, offset}
-        end
-
-      # Decode elements within the array_len byte boundary
-      end_offset = offset + array_len
-      decode_array_elements(rest3, elem_type, endianness, offset, end_offset, [])
+      with {:ok, rest3, offset} <- consume_array_element_padding(rest2, offset, elem_align) do
+        # Decode elements within the array_len byte boundary
+        end_offset = offset + array_len
+        decode_array_elements(rest3, elem_type, endianness, offset, end_offset, [])
+      end
     end
   end
 

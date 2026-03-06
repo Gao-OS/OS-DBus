@@ -83,12 +83,24 @@ defmodule GaoBus.MatchRules do
   """
   @spec matching_peers(ExDBus.Message.t()) :: [pid()]
   def matching_peers(signal) do
-    :ets.tab2list(@table)
-    |> Enum.filter(fn {_pid, _name, rule, _raw} -> matches?(rule, signal) end)
-    |> Enum.map(fn {pid, _name, _rule, _raw} -> pid end)
-    |> Enum.uniq()
+    :ets.foldl(
+      fn {pid, _name, rule, _raw}, acc ->
+        if matches?(rule, signal), do: MapSet.put(acc, pid), else: acc
+      end,
+      MapSet.new(),
+      @table
+    )
+    |> MapSet.to_list()
   catch
     :error, :badarg -> []
+  end
+
+  @doc "Check if a peer has any match rules registered."
+  @spec has_rules?(pid()) :: boolean()
+  def has_rules?(peer_pid) do
+    :ets.match(@table, {peer_pid, :_, :_, :_}) != []
+  catch
+    :error, :badarg -> false
   end
 
   @doc """

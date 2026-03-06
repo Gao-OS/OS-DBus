@@ -295,6 +295,8 @@ defmodule GaoBus.BusInterface do
   end
 
   defp next_serial(state) do
-    {state.next_serial, %{state | next_serial: state.next_serial + 1}}
+    serial = state.next_serial
+    next = if serial >= 0xFFFFFFFF, do: 1, else: serial + 1
+    {serial, %{state | next_serial: next}}
   end
 end

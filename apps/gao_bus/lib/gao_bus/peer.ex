@@ -35,7 +35,8 @@ defmodule GaoBus.Peer do
     state: :waiting_socket,
     buffer: <<>>,
     auth_buffer: <<>>,
-    fd_passing: false
+    fd_passing: false,
+    cleaned_up: false
   ]
 
   # Global atomic counter for unique names
@@ -124,12 +125,10 @@ defmodule GaoBus.Peer do
 
       {:error, :closed} ->
         Logger.debug("GaoBus.Peer: socket closed for #{state.unique_name || "unauthenticated"}")
-        cleanup(state)
         {:stop, :normal, state}
 
       {:error, reason} ->
         Logger.warning("GaoBus.Peer: socket error for #{state.unique_name}: #{inspect(reason)}")
-        cleanup(state)
         {:stop, reason, state}
     end
   end
@@ -158,13 +157,11 @@ defmodule GaoBus.Peer do
 
   def handle_info({:socket_error, :closed}, state) do
     Logger.debug("GaoBus.Peer: socket closed for #{state.unique_name || "unauthenticated"}")
-    cleanup(state)
     {:stop, :normal, state}
   end
 
   def handle_info({:socket_error, reason}, state) do
     Logger.warning("GaoBus.Peer: socket error: #{inspect(reason)}")
-    cleanup(state)
     {:stop, reason, state}
   end
 
@@ -419,6 +416,8 @@ defmodule GaoBus.Peer do
   rescue
     _ -> :error
   end
+
+  defp cleanup(%{cleaned_up: true} = _state), do: :ok
 
   defp cleanup(state) do
     if state.unique_name do

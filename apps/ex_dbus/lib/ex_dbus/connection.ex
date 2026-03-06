@@ -230,14 +230,14 @@ defmodule ExDBus.Connection do
     Logger.info("ExDBus.Connection: socket closed")
     notify_owner(state, :disconnected)
     fail_pending_calls(state, :connection_closed)
-    {:noreply, %{state | state: :disconnected, transport: nil}}
+    {:noreply, %{state | state: :disconnected, transport: nil, pending_calls: %{}}}
   end
 
   def handle_info({:tcp_error, _socket, reason}, state) do
     Logger.error("ExDBus.Connection: socket error: #{inspect(reason)}")
     notify_owner(state, {:connection_error, reason})
     fail_pending_calls(state, {:connection_error, reason})
-    {:noreply, %{state | state: :disconnected, transport: nil}}
+    {:noreply, %{state | state: :disconnected, transport: nil, pending_calls: %{}}}
   end
 
   def handle_info(msg, state) do
@@ -361,7 +361,8 @@ defmodule ExDBus.Connection do
 
   defp next_serial(state) do
     serial = state.serial
-    {serial, %{state | serial: serial + 1}}
+    next = if serial >= 0xFFFFFFFF, do: 1, else: serial + 1
+    {serial, %{state | serial: next}}
   end
 
   defp do_send_message(msg, state) do

@@ -206,16 +206,10 @@ defmodule GaoBus.Router do
 
     for {pid, _info} <- state.peers do
       # Send to peers that either have a matching rule or have no rules (backward compat)
-      if MapSet.member?(matching_pids, pid) or not has_match_rules?(pid) do
+      if MapSet.member?(matching_pids, pid) or not GaoBus.MatchRules.has_rules?(pid) do
         send(pid, {:send_message, signal})
       end
     end
-  end
-
-  defp has_match_rules?(pid) do
-    :ets.match(:gao_bus_match_rules, {pid, :_, :_, :_}) != []
-  catch
-    :error, :badarg -> false
   end
 
   defp check_policy(message, from_peer_pid, state) do
@@ -277,6 +271,8 @@ defmodule GaoBus.Router do
   end
 
   defp next_serial(state) do
-    {state.next_serial, %{state | next_serial: state.next_serial + 1}}
+    serial = state.next_serial
+    next = if serial >= 0xFFFFFFFF, do: 1, else: serial + 1
+    {serial, %{state | next_serial: next}}
   end
 end
