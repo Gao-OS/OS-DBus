@@ -23,7 +23,7 @@ jobs:
           otp-version: '28'
 
       - name: Install D-Bus tools
-        run: sudo apt-get install -y dbus dbus-user-session busctl gdbus
+        run: sudo apt-get install -y dbus dbus-user-session libglib2.0-bin
 
       - name: Restore dependencies cache
         uses: actions/cache@v4
