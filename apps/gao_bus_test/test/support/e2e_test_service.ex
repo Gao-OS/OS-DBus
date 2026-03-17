@@ -109,7 +109,10 @@ defmodule GaoBusTest.E2ETestService do
     {:noreply, state}
   end
 
-  defp build_reply(%{interface: "org.freedesktop.DBus.Introspectable", member: "Introspect"} = msg, _state) do
+  defp build_reply(
+         %{interface: "org.freedesktop.DBus.Introspectable", member: "Introspect"} = msg,
+         _state
+       ) do
     xml = build_introspection_xml()
     Message.method_return(msg.serial, destination: msg.sender, signature: "s", body: [xml])
   end
