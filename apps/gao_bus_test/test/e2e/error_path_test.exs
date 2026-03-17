@@ -13,13 +13,15 @@ defmodule GaoBusTest.E2E.ErrorPathTest do
   @moduletag timeout: 120_000
 
   setup_all do
+    unless E2EHarness.tools_available?() do
+      raise "Required tools (dbus-daemon, busctl, gdbus) not found"
+    end
+
     {:ok, state} = E2EHarness.start_bus()
     {:ok, state} = E2EHarness.start_fixture(state)
     {:ok, state} = E2EHarness.connect_elixir(state)
 
-    # Start Elixir test service (manages its own connection)
     {:ok, _} = E2ETestService.start(state.bus_address)
-    Process.sleep(200)
 
     on_exit(fn ->
       E2ETestService.stop()
@@ -53,14 +55,14 @@ defmodule GaoBusTest.E2E.ErrorPathTest do
     proxy =
       Proxy.new(
         state.elixir_conn,
-        "com.test.ExternalFixture",
-        "/com/test/ExternalFixture"
+        E2EHarness.fixture_bus_name(),
+        E2EHarness.fixture_object_path()
       )
 
     # Request a 5s delay but set 2s timeout
     result =
       try do
-        Proxy.call(proxy, "com.test.ExternalFixture", "SlowEcho",
+        Proxy.call(proxy, E2EHarness.fixture_interface(), "SlowEcho",
           signature: "us",
           body: [5_000, "should_timeout"],
           timeout: 2_000
@@ -105,8 +107,8 @@ defmodule GaoBusTest.E2E.ErrorPathTest do
     proxy =
       Proxy.new(
         state.elixir_conn,
-        "com.test.ExternalFixture",
-        "/com/test/ExternalFixture"
+        E2EHarness.fixture_bus_name(),
+        E2EHarness.fixture_object_path()
       )
 
     {:ok, reply} =
@@ -122,11 +124,11 @@ defmodule GaoBusTest.E2E.ErrorPathTest do
   @tag gate: :release
   test "#24 Bus daemon termination — Elixir detects disconnect" do
     # Start a separate, dedicated bus for this test
-    {:ok, state} = E2EHarness.start_bus()
+    {:ok, local_state} = E2EHarness.start_bus()
 
     {:ok, conn} =
       Connection.start_link(
-        address: state.bus_address,
+        address: local_state.bus_address,
         auth_mod: ExDBus.Auth.External,
         owner: self()
       )
@@ -145,8 +147,8 @@ defmodule GaoBusTest.E2E.ErrorPathTest do
     {:ok, _} = Connection.call(conn, hello, 5_000)
 
     # Kill the bus daemon
-    if state.daemon_pid do
-      System.cmd("kill", ["-TERM", "#{state.daemon_pid}"], stderr_to_stdout: true)
+    if local_state.daemon_pid do
+      System.cmd("kill", ["-TERM", "#{local_state.daemon_pid}"], stderr_to_stdout: true)
     end
 
     # Should receive disconnect notification or connection should error
@@ -158,18 +160,17 @@ defmodule GaoBusTest.E2E.ErrorPathTest do
         5_000 -> false
       end
 
-    # Clean up
+    # Clean up connection (may already be dead after bus termination)
     try do
       Connection.disconnect(conn)
     catch
       _, _ -> :ok
     end
 
-    E2EHarness.cleanup(%{state | daemon_pid: nil, daemon_port: nil})
+    # Clean up bus resources (daemon already killed, avoid double-kill)
+    E2EHarness.cleanup(%{local_state | daemon_pid: nil, daemon_port: nil})
 
-    assert received_disconnect or
-             Connection.get_state(conn) != :connected,
-           "Should detect bus daemon termination"
+    assert received_disconnect, "Should detect bus daemon termination"
   end
 
   # --- Scenario 25: Invalid/malformed request ---

@@ -13,13 +13,15 @@ defmodule GaoBusTest.E2E.SignalTest do
   @moduletag timeout: 120_000
 
   setup_all do
+    unless E2EHarness.tools_available?() do
+      raise "Required tools (dbus-daemon, busctl, gdbus) not found"
+    end
+
     {:ok, state} = E2EHarness.start_bus()
     {:ok, state} = E2EHarness.start_fixture(state)
     {:ok, state} = E2EHarness.connect_elixir(state)
 
-    # Start Elixir test service (manages its own connection)
     {:ok, _} = E2ETestService.start(state.bus_address)
-    Process.sleep(200)
 
     on_exit(fn ->
       E2ETestService.stop()
@@ -107,7 +109,7 @@ defmodule GaoBusTest.E2E.SignalTest do
         destination: "org.freedesktop.DBus",
         signature: "s",
         body: [
-          "type='signal',interface='com.test.ExternalFixture',member='TestSignal'"
+          "type='signal',interface='#{E2EHarness.fixture_interface()}',member='TestSignal'"
         ]
       )
 
@@ -117,12 +119,12 @@ defmodule GaoBusTest.E2E.SignalTest do
     proxy =
       Proxy.new(
         sig_conn,
-        "com.test.ExternalFixture",
-        "/com/test/ExternalFixture"
+        E2EHarness.fixture_bus_name(),
+        E2EHarness.fixture_object_path()
       )
 
     {:ok, _} =
-      Proxy.call(proxy, "com.test.ExternalFixture", "EmitTestSignal",
+      Proxy.call(proxy, E2EHarness.fixture_interface(), "EmitTestSignal",
         signature: "s",
         body: [payload]
       )
@@ -149,13 +151,13 @@ defmodule GaoBusTest.E2E.SignalTest do
     # Create a dedicated connection owned by this test process
     {:ok, sig_conn} = connect_for_signals(state.bus_address)
 
-    # Add match for a specific signal
+    # Subscribe ONLY to TestSignal from the fixture interface
     add_match =
       Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "AddMatch",
         destination: "org.freedesktop.DBus",
         signature: "s",
         body: [
-          "type='signal',interface='com.test.ExternalFixture',member='TestSignal'"
+          "type='signal',interface='#{E2EHarness.fixture_interface()}',member='TestSignal'"
         ]
       )
 
@@ -164,13 +166,31 @@ defmodule GaoBusTest.E2E.SignalTest do
     proxy =
       Proxy.new(
         sig_conn,
-        "com.test.ExternalFixture",
-        "/com/test/ExternalFixture"
+        E2EHarness.fixture_bus_name(),
+        E2EHarness.fixture_object_path()
       )
 
-    # Emit matched signal
+    # First: emit an unrelated signal from the Elixir test service (different interface)
+    # This should NOT be delivered because our match rule filters on com.test.ExternalFixture
+    service_conn = E2ETestService.get_connection()
+
+    unmatched_signal =
+      Message.signal(
+        "/com/test/ElixirService",
+        "com.test.ElixirService",
+        "UnrelatedSignal",
+        signature: "s",
+        body: ["should_not_arrive"]
+      )
+
+    Connection.send_signal(service_conn, unmatched_signal)
+
+    # Brief pause to let the unmatched signal propagate (or not)
+    Process.sleep(200)
+
+    # Now emit the matched signal
     {:ok, _} =
-      Proxy.call(proxy, "com.test.ExternalFixture", "EmitTestSignal",
+      Proxy.call(proxy, E2EHarness.fixture_interface(), "EmitTestSignal",
         signature: "s",
         body: ["matched_payload"]
       )
@@ -184,10 +204,19 @@ defmodule GaoBusTest.E2E.SignalTest do
         5_000 -> nil
       end
 
+    # Drain mailbox — verify no unmatched signals arrived
+    unmatched =
+      receive do
+        {:ex_dbus, {:message, %{type: :signal, member: "UnrelatedSignal"}}} -> true
+      after
+        200 -> false
+      end
+
     Connection.disconnect(sig_conn)
 
     assert received != nil, "Should receive matched signal"
     assert received.body == ["matched_payload"]
+    refute unmatched, "Should NOT receive signals that don't match the rule"
   end
 
   defp connect_for_signals(bus_address) do

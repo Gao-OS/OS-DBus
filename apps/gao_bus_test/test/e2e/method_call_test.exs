@@ -26,9 +26,7 @@ defmodule GaoBusTest.E2E.MethodCallTest do
     {:ok, state} = E2EHarness.start_fixture(state)
     {:ok, state} = E2EHarness.connect_elixir(state)
 
-    # Start Elixir test service (manages its own connection)
     {:ok, _} = E2ETestService.start(state.bus_address)
-    Process.sleep(200)
 
     on_exit(fn ->
       E2ETestService.stop()
@@ -81,12 +79,12 @@ defmodule GaoBusTest.E2E.MethodCallTest do
     proxy =
       Proxy.new(
         state.elixir_conn,
-        "com.test.ExternalFixture",
-        "/com/test/ExternalFixture"
+        E2EHarness.fixture_bus_name(),
+        E2EHarness.fixture_object_path()
       )
 
     {:ok, reply} =
-      Proxy.call(proxy, "com.test.ExternalFixture", "Echo",
+      Proxy.call(proxy, E2EHarness.fixture_interface(), "Echo",
         signature: "s",
         body: ["hello_from_elixir"]
       )
@@ -101,13 +99,13 @@ defmodule GaoBusTest.E2E.MethodCallTest do
     proxy =
       Proxy.new(
         state.elixir_conn,
-        "com.test.ExternalFixture",
-        "/com/test/ExternalFixture"
+        E2EHarness.fixture_bus_name(),
+        E2EHarness.fixture_object_path()
       )
 
     # String
     {:ok, reply} =
-      Proxy.call(proxy, "com.test.ExternalFixture", "TypeRoundTrip",
+      Proxy.call(proxy, E2EHarness.fixture_interface(), "TypeRoundTrip",
         signature: "v",
         body: [{"s", "test_string"}]
       )
@@ -117,7 +115,7 @@ defmodule GaoBusTest.E2E.MethodCallTest do
 
     # Integer (int32)
     {:ok, reply} =
-      Proxy.call(proxy, "com.test.ExternalFixture", "TypeRoundTrip",
+      Proxy.call(proxy, E2EHarness.fixture_interface(), "TypeRoundTrip",
         signature: "v",
         body: [{"i", 42}]
       )
@@ -127,7 +125,7 @@ defmodule GaoBusTest.E2E.MethodCallTest do
 
     # Boolean
     {:ok, reply} =
-      Proxy.call(proxy, "com.test.ExternalFixture", "TypeRoundTrip",
+      Proxy.call(proxy, E2EHarness.fixture_interface(), "TypeRoundTrip",
         signature: "v",
         body: [{"b", true}]
       )
@@ -137,7 +135,7 @@ defmodule GaoBusTest.E2E.MethodCallTest do
 
     # Double
     {:ok, reply} =
-      Proxy.call(proxy, "com.test.ExternalFixture", "TypeRoundTrip",
+      Proxy.call(proxy, E2EHarness.fixture_interface(), "TypeRoundTrip",
         signature: "v",
         body: [{"d", 3.14}]
       )
@@ -171,12 +169,12 @@ defmodule GaoBusTest.E2E.MethodCallTest do
     proxy =
       Proxy.new(
         state.elixir_conn,
-        "com.test.ExternalFixture",
-        "/com/test/ExternalFixture"
+        E2EHarness.fixture_bus_name(),
+        E2EHarness.fixture_object_path()
       )
 
     result =
-      Proxy.call(proxy, "com.test.ExternalFixture", "AlwaysFail",
+      Proxy.call(proxy, E2EHarness.fixture_interface(), "AlwaysFail",
         signature: "s",
         body: ["trigger_failure"]
       )

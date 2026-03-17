@@ -9,10 +9,18 @@ defmodule GaoBusTest.E2EHarness do
 
   require Logger
 
-  @dbus_daemon System.find_executable("dbus-daemon")
-  @fixture_binary Path.join([__DIR__, "..", "fixture", "external_fixture"])
+  @fixture_binary Path.expand(Path.join([__DIR__, "..", "fixture", "external_fixture"]))
   @tool_timeout 5_000
   @startup_timeout 10_000
+
+  # C fixture service identity constants
+  @fixture_bus_name "com.test.ExternalFixture"
+  @fixture_object_path "/com/test/ExternalFixture"
+  @fixture_interface "com.test.ExternalFixture"
+
+  def fixture_bus_name, do: @fixture_bus_name
+  def fixture_object_path, do: @fixture_object_path
+  def fixture_interface, do: @fixture_interface
 
   defstruct [
     :tmpdir,
@@ -22,13 +30,12 @@ defmodule GaoBusTest.E2EHarness do
     :daemon_pid,
     :fixture_port,
     :fixture_pid,
-    :elixir_conn,
-    :elixir_service_conn
+    :elixir_conn
   ]
 
   @doc "Check if required external tools are available."
   def tools_available? do
-    @dbus_daemon != nil and
+    System.find_executable("dbus-daemon") != nil and
       System.find_executable("busctl") != nil and
       System.find_executable("gdbus") != nil
   end
@@ -67,9 +74,13 @@ defmodule GaoBusTest.E2EHarness do
 
     File.write!(config_path, config_xml)
 
+    dbus_daemon =
+      System.find_executable("dbus-daemon") ||
+        raise "dbus-daemon not found on PATH"
+
     port =
       Port.open(
-        {:spawn_executable, @dbus_daemon},
+        {:spawn_executable, dbus_daemon},
         [
           :binary,
           :stderr_to_stdout,
@@ -149,51 +160,6 @@ defmodule GaoBusTest.E2EHarness do
     {:ok, %{state | elixir_conn: conn}}
   end
 
-  @doc "Start an Elixir service on the bus (for X→E scenarios)."
-  def start_elixir_service(%__MODULE__{bus_address: addr} = state, service_mod) do
-    {:ok, conn} =
-      ExDBus.Connection.start_link(
-        address: addr,
-        auth_mod: ExDBus.Auth.External,
-        owner: service_mod.owner_pid()
-      )
-
-    receive do
-      {:ex_dbus, {:connected, _guid}} -> :ok
-    after
-      @startup_timeout -> raise "Elixir service connection timed out"
-    end
-
-    # Hello
-    hello =
-      ExDBus.Message.method_call(
-        "/org/freedesktop/DBus",
-        "org.freedesktop.DBus",
-        "Hello",
-        destination: "org.freedesktop.DBus"
-      )
-
-    {:ok, _} = ExDBus.Connection.call(conn, hello, @tool_timeout)
-
-    # RequestName
-    request =
-      ExDBus.Message.method_call(
-        "/org/freedesktop/DBus",
-        "org.freedesktop.DBus",
-        "RequestName",
-        destination: "org.freedesktop.DBus",
-        signature: "su",
-        body: [service_mod.bus_name(), 0]
-      )
-
-    {:ok, _} = ExDBus.Connection.call(conn, request, @tool_timeout)
-
-    # Start handling incoming messages
-    service_mod.start(conn)
-
-    {:ok, %{state | elixir_service_conn: conn}}
-  end
-
   @doc "Run busctl against the test bus."
   def busctl(%__MODULE__{bus_address: addr}, args, _opts \\ []) do
     System.cmd(
@@ -236,15 +202,17 @@ defmodule GaoBusTest.E2EHarness do
   end
 
   @doc "Run dbus-monitor as a background port, returns port."
-  def busctl_monitor(%__MODULE__{bus_address: addr}, _match_args \\ []) do
-    dbus_monitor = System.find_executable("dbus-monitor")
+  def busctl_monitor(%__MODULE__{bus_address: addr}, match_args \\ []) do
+    dbus_monitor =
+      System.find_executable("dbus-monitor") ||
+        raise "dbus-monitor not found on PATH"
 
     Port.open(
       {:spawn_executable, dbus_monitor},
       [
         :binary,
         :stderr_to_stdout,
-        args: ["--address", addr]
+        args: ["--address", addr] ++ match_args
       ]
     )
   end
@@ -254,14 +222,6 @@ defmodule GaoBusTest.E2EHarness do
     if state.elixir_conn do
       try do
         ExDBus.Connection.disconnect(state.elixir_conn)
-      catch
-        _, _ -> :ok
-      end
-    end
-
-    if state.elixir_service_conn do
-      try do
-        ExDBus.Connection.disconnect(state.elixir_service_conn)
       catch
         _, _ -> :ok
       end

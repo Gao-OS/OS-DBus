@@ -16,13 +16,15 @@ defmodule GaoBusTest.E2E.PropertyTest do
   @moduletag timeout: 120_000
 
   setup_all do
+    unless E2EHarness.tools_available?() do
+      raise "Required tools (dbus-daemon, busctl, gdbus) not found"
+    end
+
     {:ok, state} = E2EHarness.start_bus()
     {:ok, state} = E2EHarness.start_fixture(state)
     {:ok, state} = E2EHarness.connect_elixir(state)
 
-    # Start Elixir test service (manages its own connection)
     {:ok, _} = E2ETestService.start(state.bus_address)
-    Process.sleep(200)
 
     on_exit(fn ->
       E2ETestService.stop()
@@ -103,13 +105,13 @@ defmodule GaoBusTest.E2E.PropertyTest do
     proxy =
       Proxy.new(
         state.elixir_conn,
-        "com.test.ExternalFixture",
-        "/com/test/ExternalFixture"
+        E2EHarness.fixture_bus_name(),
+        E2EHarness.fixture_object_path()
       )
 
     # The fixture does support properties, so this might succeed
     # Either way, the Elixir client should not crash
-    result = Proxy.get_property(proxy, "com.test.ExternalFixture", "CurrentValue")
+    result = Proxy.get_property(proxy, E2EHarness.fixture_interface(), "CurrentValue")
 
     case result do
       {:ok, {_sig, value}} ->

@@ -14,6 +14,10 @@ defmodule GaoBusTest.E2E.BusSemanticsTest do
   @bus_name "com.test.NameTest"
 
   setup_all do
+    unless E2EHarness.tools_available?() do
+      raise "Required tools (dbus-daemon, busctl, gdbus) not found"
+    end
+
     {:ok, state} = E2EHarness.start_bus()
     {:ok, state} = E2EHarness.connect_elixir(state)
 
@@ -169,9 +173,12 @@ defmodule GaoBusTest.E2E.BusSemanticsTest do
     Connection.disconnect(conn2)
 
     if received do
-      assert received.body != nil
+      # NameOwnerChanged body: [name, old_owner, new_owner]
+      assert [^name, old_owner, new_owner] = received.body
+      assert old_owner == "" or is_binary(old_owner)
+      assert is_binary(new_owner) and new_owner != ""
     end
 
-    # Optional test — pass even if signal not received
+    # Optional test — pass even if signal not received (bus may not deliver it)
   end
 end
