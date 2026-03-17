@@ -49,6 +49,34 @@
     bus-start.exec = "mix run --no-halt";
     fmt.exec = "mix format";
     lint.exec = "mix credo --strict";
+
+    # E2E test suite — runs 27 scenarios against a real dbus-daemon
+    e2e-build.exec = "make -C apps/gao_bus_test/test/fixture";
+    e2e-test.exec = ''
+      # Build fixture if not present
+      if [ ! -f apps/gao_bus_test/test/fixture/external_fixture ]; then
+        echo "Building C fixture binary..."
+        make -C apps/gao_bus_test/test/fixture
+      fi
+      mix test --only e2e
+    '';
+    e2e-gate.exec = ''
+      if [ ! -f apps/gao_bus_test/test/fixture/external_fixture ]; then
+        make -C apps/gao_bus_test/test/fixture
+      fi
+      mix test --only e2e --only gate:release
+    '';
+    e2e-group.exec = ''
+      if [ -z "$1" ]; then
+        echo "Usage: e2e-group <group>"
+        echo "Groups: methods, signals, introspection, properties, bus_semantics, errors, concurrency"
+        exit 1
+      fi
+      if [ ! -f apps/gao_bus_test/test/fixture/external_fixture ]; then
+        make -C apps/gao_bus_test/test/fixture
+      fi
+      mix test --only e2e --only "group:$1"
+    '';
   };
 
   enterShell = ''
@@ -56,6 +84,13 @@
     echo "  mix test       — run all tests"
     echo "  bus-start      — start the bus daemon"
     echo "  mix phx.server — start web monitor"
+    echo ""
+    echo "  E2E test suite (27 scenarios against real dbus-daemon):"
+    echo "  e2e-build      — compile C fixture binary"
+    echo "  e2e-test       — run full E2E suite"
+    echo "  e2e-gate       — run release-gate E2E tests only"
+    echo "  e2e-group NAME — run one group (methods|signals|introspection|"
+    echo "                   properties|bus_semantics|errors|concurrency)"
     echo ""
     mix deps.get --quiet 2>/dev/null || true
   '';
