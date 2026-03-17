@@ -92,3 +92,4 @@ devenv.local.nix
 
 *.LOG
 *.DAT
+apps/gao_bus_test/test/fixture/external_fixture

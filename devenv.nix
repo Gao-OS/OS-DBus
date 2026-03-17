@@ -20,8 +20,12 @@
 
   # System packages for D-Bus interop testing
   packages = with pkgs; [
-    dbus          # dbus-send, dbus-monitor
+    dbus          # dbus-send, dbus-monitor, dbus-daemon
     systemdMinimal # busctl
+    glib          # gdbus
+    glib.dev      # GLib/GIO headers for C fixture compilation
+    pkg-config    # for fixture compilation
+    gcc           # C compiler for fixture
     socat         # unix socket debugging
     inotify-tools # Phoenix live reload
   ];

@@ -1,1 +1,1 @@
-ExUnit.start(exclude: [:interop])
+ExUnit.start(exclude: [:interop, :e2e])

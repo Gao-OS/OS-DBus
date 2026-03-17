@@ -406,27 +406,22 @@ defmodule ExDBus.Introspection do
   end
 
   defp parse_args(body) do
-    Regex.scan(
-      ~r/<arg(?:\s+name="([^"]*)")?\s+type="([^"]+)"(?:\s+direction="([^"]+)")?\/>/s,
-      body
-    )
-    |> Enum.map(fn match ->
-      name = Enum.at(match, 1)
-      type = Enum.at(match, 2)
-      direction = Enum.at(match, 3)
+    # Match <arg .../> (self-closing) and <arg ...>...</arg> (GDBus style)
+    Regex.scan(~r/<arg\s[^>]*(?:\/>|>[\s\S]*?<\/arg>)/s, body)
+    |> Enum.map(fn [tag] ->
+      name = extract_tag_attr(tag, "name")
+      type = extract_tag_attr(tag, "type")
+      direction = extract_tag_attr(tag, "direction")
 
       %Arg{
-        name: if(name == "", do: nil, else: name),
+        name: if(name == "" or is_nil(name), do: nil, else: name),
         type: type,
         direction:
-          if direction do
-            case direction do
-              "in" -> :in
-              "out" -> :out
-              _ -> :in
-            end
-          else
-            nil
+          case direction do
+            "in" -> :in
+            "out" -> :out
+            nil -> nil
+            _ -> :in
           end
       }
     end)
@@ -434,6 +429,13 @@ defmodule ExDBus.Introspection do
 
   defp extract_attr(xml, element, attr) do
     case Regex.run(~r/<#{element}[^>]*\s#{attr}="([^"]+)"/, xml) do
+      [_, value] -> value
+      nil -> nil
+    end
+  end
+
+  defp extract_tag_attr(tag, attr) do
+    case Regex.run(~r/\s#{attr}="([^"]*)"/, tag) do
       [_, value] -> value
       nil -> nil
     end
