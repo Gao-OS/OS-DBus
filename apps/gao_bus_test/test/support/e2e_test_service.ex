@@ -109,72 +109,60 @@ defmodule GaoBusTest.E2ETestService do
     {:noreply, state}
   end
 
-  defp build_reply(msg, state) do
-    cond do
-      msg.interface == "org.freedesktop.DBus.Introspectable" and msg.member == "Introspect" ->
-        xml = build_introspection_xml()
+  defp build_reply(
+         %{interface: "org.freedesktop.DBus.Introspectable", member: "Introspect"} = msg,
+         _state
+       ) do
+    xml = build_introspection_xml()
+    Message.method_return(msg.serial, destination: msg.sender, signature: "s", body: [xml])
+  end
 
-        Message.method_return(msg.serial,
-          destination: msg.sender,
-          signature: "s",
-          body: [xml]
-        )
+  defp build_reply(%{interface: "org.freedesktop.DBus.Properties"} = msg, _state) do
+    Message.error(
+      "org.freedesktop.DBus.Error.UnknownInterface",
+      msg.serial,
+      destination: msg.sender,
+      signature: "s",
+      body: ["Properties interface not implemented"]
+    )
+  end
 
-      msg.interface == "org.freedesktop.DBus.Properties" ->
-        Message.error(
-          "org.freedesktop.DBus.Error.UnknownInterface",
-          msg.serial,
-          destination: msg.sender,
-          signature: "s",
-          body: ["Properties interface not implemented"]
-        )
+  defp build_reply(%{interface: @interface, member: "Echo"} = msg, _state) do
+    [input] = msg.body
 
-      msg.interface == @interface and msg.member == "Echo" ->
-        [input] = msg.body
-
-        unless is_binary(input) do
-          raise ArgumentError, "Echo expects a string, got: #{inspect(input)}"
-        end
-
-        Message.method_return(msg.serial,
-          destination: msg.sender,
-          signature: "s",
-          body: [input]
-        )
-
-      msg.interface == @interface and msg.member == "Add" ->
-        [a, b] = msg.body
-
-        Message.method_return(msg.serial,
-          destination: msg.sender,
-          signature: "i",
-          body: [a + b]
-        )
-
-      msg.interface == @interface and msg.member == "EmitSignal" ->
-        [payload] = msg.body
-
-        signal =
-          Message.signal(@object_path, @interface, "TestSignal",
-            signature: "s",
-            body: [payload]
-          )
-
-        Connection.send_signal(state.conn, signal)
-
-        Message.method_return(msg.serial,
-          destination: msg.sender
-        )
-
-      true ->
-        Message.error(
-          "org.freedesktop.DBus.Error.UnknownMethod",
-          msg.serial,
-          destination: msg.sender,
-          signature: "s",
-          body: ["No such method: #{msg.interface}.#{msg.member}"]
-        )
+    unless is_binary(input) do
+      raise ArgumentError, "Echo expects a string, got: #{inspect(input)}"
     end
+
+    Message.method_return(msg.serial, destination: msg.sender, signature: "s", body: [input])
+  end
+
+  defp build_reply(%{interface: @interface, member: "Add"} = msg, _state) do
+    [a, b] = msg.body
+    Message.method_return(msg.serial, destination: msg.sender, signature: "i", body: [a + b])
+  end
+
+  defp build_reply(%{interface: @interface, member: "EmitSignal"} = msg, state) do
+    [payload] = msg.body
+
+    signal =
+      Message.signal(@object_path, @interface, "TestSignal",
+        signature: "s",
+        body: [payload]
+      )
+
+    Connection.send_signal(state.conn, signal)
+    Message.method_return(msg.serial, destination: msg.sender)
+  end
+
+  defp build_reply(msg, _state) do
+    Message.error(
+      "org.freedesktop.DBus.Error.UnknownMethod",
+      msg.serial,
+      destination: msg.sender,
+      signature: "s",
+      body: ["No such method: #{msg.interface}.#{msg.member}"]
+    )
   end
 
   defp build_introspection_xml do
