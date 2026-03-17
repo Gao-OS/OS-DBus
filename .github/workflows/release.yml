@@ -1,0 +1,164 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 0.2.0)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run (skip publish + GitHub release)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release v${{ inputs.version }}
+    runs-on: ubuntu-latest
+
+    env:
+      MIX_ENV: prod
+
+    steps:
+      - name: Validate version format
+        run: |
+          if ! echo "${{ inputs.version }}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo "::error::Invalid version format '${{ inputs.version }}'. Expected semver (e.g. 0.2.0 or 1.0.0-rc.1)"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check tag does not already exist
+        run: |
+          if git rev-parse "v${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "::error::Tag v${{ inputs.version }} already exists"
+            exit 1
+          fi
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.18'
+          otp-version: '28'
+
+      - name: Restore dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-prod-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-prod-
+
+      - name: Install dependencies
+        run: mix deps.get --only prod
+
+      # --- Version bump ---
+      - name: Update version in mix.exs files
+        run: |
+          # Umbrella root mix.exs
+          sed -i 's/version: "[^"]*"/version: "${{ inputs.version }}"/' mix.exs
+
+          # ex_dbus app (hex-published package)
+          sed -i 's/@version "[^"]*"/@version "${{ inputs.version }}"/' apps/ex_dbus/mix.exs
+
+      - name: Verify version was updated
+        run: |
+          grep -q 'version: "${{ inputs.version }}"' mix.exs || { echo "::error::Root mix.exs version not updated"; exit 1; }
+          grep -q '@version "${{ inputs.version }}"' apps/ex_dbus/mix.exs || { echo "::error::ex_dbus mix.exs version not updated"; exit 1; }
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add mix.exs apps/ex_dbus/mix.exs
+          git commit -m "chore: bump version to ${{ inputs.version }}"
+
+      # --- Build ---
+      - name: Compile
+        run: mix compile
+
+      - name: Build ex_dbus hex package
+        run: |
+          cd apps/ex_dbus
+          mix hex.build
+
+      # --- Publish ex_dbus to Hex ---
+      - name: Publish ex_dbus to Hex
+        if: ${{ !inputs.dry_run }}
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+        run: |
+          cd apps/ex_dbus
+          mix hex.publish --yes
+
+      # --- Tag + push ---
+      - name: Create git tag and push
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
+          git push origin HEAD "v${{ inputs.version }}"
+
+      # --- Generate release notes ---
+      - name: Generate release notes
+        if: ${{ !inputs.dry_run }}
+        id: notes
+        run: |
+          # Get previous tag for changelog range
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          {
+            echo "notes<<RELEASE_NOTES_EOF"
+
+            echo "## ex_dbus v${{ inputs.version }}"
+            echo ""
+            echo "[![Hex.pm](https://img.shields.io/hexpm/v/ex_dbus.svg)](https://hex.pm/packages/ex_dbus)"
+            echo ""
+
+            if [ -n "$PREV_TAG" ]; then
+              echo "### Changes since ${PREV_TAG}"
+              echo ""
+              git log "${PREV_TAG}..HEAD^" --pretty=format:"- %s (%h)" --no-merges
+            else
+              echo "### Initial release"
+            fi
+
+            echo ""
+            echo ""
+            echo "### Install"
+            echo ""
+            echo '```elixir'
+            echo "def deps do"
+            echo '  [{:ex_dbus, "~> ${{ inputs.version }}"}]'
+            echo "end"
+            echo '```'
+
+            echo "RELEASE_NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # --- GitHub Release ---
+      - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: v${{ inputs.version }}
+          body: ${{ steps.notes.outputs.notes }}
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "::notice::Dry run complete. Would have released v${{ inputs.version }}"
+          echo "Version bump applied to:"
+          grep 'version:' mix.exs
+          grep '@version' apps/ex_dbus/mix.exs
+          echo ""
+          echo "Hex package built:"
+          ls -la apps/ex_dbus/ex_dbus-*.tar 2>/dev/null || echo "(no tarball found)"
