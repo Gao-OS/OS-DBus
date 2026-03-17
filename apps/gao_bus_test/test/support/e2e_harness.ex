@@ -203,16 +203,19 @@ defmodule GaoBusTest.E2EHarness do
 
   @doc "Run dbus-monitor as a background port, returns port."
   def busctl_monitor(%__MODULE__{bus_address: addr}, match_args \\ []) do
-    dbus_monitor =
-      System.find_executable("dbus-monitor") ||
-        raise "dbus-monitor not found on PATH"
+    busctl_path =
+      System.find_executable("busctl") ||
+        raise "busctl not found on PATH"
 
     Port.open(
-      {:spawn_executable, dbus_monitor},
+      {:spawn_executable, busctl_path},
       [
         :binary,
         :stderr_to_stdout,
-        args: ["--address", addr] ++ match_args
+        args: ["--address=#{addr}", "monitor"] ++ match_args,
+        env: [
+          {~c"DBUS_SESSION_BUS_ADDRESS", String.to_charlist(addr)}
+        ]
       ]
     )
   end

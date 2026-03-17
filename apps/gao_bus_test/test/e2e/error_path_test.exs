@@ -154,8 +154,10 @@ defmodule GaoBusTest.E2E.ErrorPathTest do
     # Should receive disconnect notification or connection should error
     received_disconnect =
       receive do
+        {:ex_dbus, :disconnected} -> true
         {:ex_dbus, {:disconnected}} -> true
         {:ex_dbus, {:connection_error, _}} -> true
+        {:DOWN, _, :process, ^conn, _} -> true
       after
         5_000 -> false
       end
