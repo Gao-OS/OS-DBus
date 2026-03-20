@@ -1,5 +1,12 @@
 # gao_dbus
 
+[![CI](https://github.com/Gao-OS/OS-DBus/actions/workflows/ci.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/ci.yml)
+[![Test](https://github.com/Gao-OS/OS-DBus/actions/workflows/test.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/test.yml)
+[![E2E](https://github.com/Gao-OS/OS-DBus/actions/workflows/e2e.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/e2e.yml)
+[![Release](https://github.com/Gao-OS/OS-DBus/actions/workflows/release.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/release.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/ex_dbus.svg)](https://hex.pm/packages/ex_dbus)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_dbus)
+
 A BEAM-native D-Bus implementation for GaoOS — replacing `dbus-daemon` with a supervised, capability-aware Elixir bus.
 
 ## Overview

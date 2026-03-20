@@ -1,5 +1,9 @@
 # ExDBus
 
+[![Hex.pm](https://img.shields.io/hexpm/v/ex_dbus.svg)](https://hex.pm/packages/ex_dbus)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_dbus)
+[![CI](https://github.com/Gao-OS/OS-DBus/actions/workflows/ci.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/ci.yml)
+
 Pure Elixir D-Bus wire protocol implementation with no C dependencies or NIFs.
 
 ExDBus handles encoding/decoding of all D-Bus types, message framing,
