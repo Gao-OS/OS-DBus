@@ -92,12 +92,12 @@ jobs:
 
       # --- Publish ex_dbus to Hex ---
       - name: Publish ex_dbus to Hex
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && secrets.HEX_API_KEY != '' }}
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
         run: |
           cd apps/ex_dbus
-          mix hex.publish --yes
+          mix hex.publish --yes --no-docs
 
       # --- Tag + push ---
       - name: Create git tag and push
