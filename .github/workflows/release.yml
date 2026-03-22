@@ -92,10 +92,14 @@ jobs:
 
       # --- Publish ex_dbus to Hex ---
       - name: Publish ex_dbus to Hex
-        if: ${{ !inputs.dry_run && secrets.HEX_API_KEY != '' }}
+        if: ${{ !inputs.dry_run }}
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
         run: |
+          if [ -z "${HEX_API_KEY}" ]; then
+            echo "::notice::HEX_API_KEY secret not set — skipping Hex publish"
+            exit 0
+          fi
           cd apps/ex_dbus
           mix hex.publish --yes --no-docs
 
