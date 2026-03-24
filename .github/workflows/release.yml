@@ -54,7 +54,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-prod-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-mix-prod-${{ hashFiles('**/mix.lock', '**/mix.exs') }}
           restore-keys: ${{ runner.os }}-mix-prod-
 
       - name: Install dependencies
@@ -101,7 +101,7 @@ jobs:
             exit 0
           fi
           cd apps/ex_d_bus
-          mix hex.publish --yes --no-docs
+          mix hex.publish package --yes
 
       # --- Tag + push ---
       - name: Create git tag and push
