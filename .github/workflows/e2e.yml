@@ -43,7 +43,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-e2e-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-mix-e2e-${{ hashFiles('**/mix.lock', '**/mix.exs') }}
           restore-keys: ${{ runner.os }}-mix-e2e-
 
       - name: Install dependencies

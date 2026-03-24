@@ -28,7 +28,7 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock', '**/mix.exs') }}
           restore-keys: ${{ runner.os }}-mix-
 
       - name: Install dependencies
