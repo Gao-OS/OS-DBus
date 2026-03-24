@@ -7,17 +7,17 @@ Read CLAUDE.md first. Then scaffold the gao_dbus Elixir umbrella project:
 
 1. Create the umbrella root with `mix new gao_dbus --umbrella`
 2. Create apps:
-   - `cd apps && mix new ex_dbus` (library, no supervision)
+   - `cd apps && mix new ex_d_bus` (library, no supervision)
    - `cd apps && mix new gao_bus --sup` (OTP application)
    - `cd apps && mix new gao_config --sup` (OTP application)
    - `cd apps && mix phx.new gao_bus_web --live --no-ecto --no-mailer` (Phoenix LiveView)
    - `cd apps && mix new gao_bus_test` (test-only app)
 
 3. Configure dependencies in each app's mix.exs:
-   - ex_dbus: ZERO umbrella deps
-   - gao_bus: `{:ex_dbus, in_umbrella: true}`
-   - gao_config: `{:ex_dbus, in_umbrella: true}`
-   - gao_bus_web: `{:ex_dbus, in_umbrella: true}, {:gao_bus, in_umbrella: true}, {:phoenix, "~> 1.7"}, {:phoenix_live_view, "~> 1.0"}`
+   - ex_d_bus: ZERO umbrella deps
+   - gao_bus: `{:ex_d_bus, in_umbrella: true}`
+   - gao_config: `{:ex_d_bus, in_umbrella: true}`
+   - gao_bus_web: `{:ex_d_bus, in_umbrella: true}, {:gao_bus, in_umbrella: true}, {:phoenix, "~> 1.7"}, {:phoenix_live_view, "~> 1.0"}`
    - gao_bus_test: all umbrella deps + `{:stream_data, "~> 1.0", only: :test}`
 
 4. Add shared dev deps to umbrella root: `{:credo, "~> 1.7"}, {:dialyxir, "~> 1.4"}, {:ex_doc, "~> 0.34"}`
@@ -26,23 +26,23 @@ Read CLAUDE.md first. Then scaffold the gao_dbus Elixir umbrella project:
 
 6. Verify: `mix compile` succeeds with zero warnings
 
-IMPORTANT: ex_dbus/mix.exs must have NO umbrella dependencies.
+IMPORTANT: ex_d_bus/mix.exs must have NO umbrella dependencies.
 ```
 
-## Prompt 2: ex_dbus Wire Protocol — Types & Encoder
+## Prompt 2: ex_d_bus Wire Protocol — Types & Encoder
 
 ```
 Read CLAUDE.md, focusing on the D-Bus Wire Protocol Reference section.
 
-Implement the ex_dbus type system and encoder:
+Implement the ex_d_bus type system and encoder:
 
-1. `lib/ex_dbus/wire/types.ex`:
+1. `lib/ex_d_bus/wire/types.ex`:
    - Define the type mapping from D-Bus signatures to Elixir types
    - Signature parser: "a{sv}" → {:array, {:dict_entry, :string, :variant}}
    - Signature serializer: reverse direction
    - Type validation functions
 
-2. `lib/ex_dbus/wire/encoder.ex`:
+2. `lib/ex_d_bus/wire/encoder.ex`:
    - `encode(value, type, endianness \\ :little) :: iolist()`
    - Handle all basic types (byte, boolean, int16/32/64, uint16/32/64, double, string, object_path, signature)
    - Handle container types (array, struct, variant, dict_entry)
@@ -59,12 +59,12 @@ Focus on correctness over performance. Use the alignment table from CLAUDE.md.
 Binary pattern matching and iolist are mandatory.
 ```
 
-## Prompt 3: ex_dbus Wire Protocol — Decoder
+## Prompt 3: ex_d_bus Wire Protocol — Decoder
 
 ```
 Read CLAUDE.md. Implement the decoder as the inverse of the encoder.
 
-1. `lib/ex_dbus/wire/decoder.ex`:
+1. `lib/ex_d_bus/wire/decoder.ex`:
    - `decode(binary, type, endianness \\ :little) :: {:ok, value, rest} | {:error, reason}`
    - Handle all types matching the encoder
    - Consume correct alignment padding
@@ -75,7 +75,7 @@ Read CLAUDE.md. Implement the decoder as the inverse of the encoder.
    - Use StreamData generators for arbitrary D-Bus values
    - Test with random endianness
 
-3. `lib/ex_dbus/message.ex`:
+3. `lib/ex_d_bus/message.ex`:
    - Define Message struct: type, flags, serial, headers, body
    - `encode_message(message) :: iodata()`
    - `decode_message(binary) :: {:ok, message, rest} | {:error, reason}`
@@ -84,32 +84,32 @@ Read CLAUDE.md. Implement the decoder as the inverse of the encoder.
 The decoder MUST use binary pattern matching, not `binary_part` or manual offset tracking.
 ```
 
-## Prompt 4: ex_dbus Auth & Transport
+## Prompt 4: ex_d_bus Auth & Transport
 
 ```
 Read CLAUDE.md auth and transport sections.
 
-1. `lib/ex_dbus/auth/mechanism.ex` — behaviour:
+1. `lib/ex_d_bus/auth/mechanism.ex` — behaviour:
    - `@callback init(opts) :: state`
    - `@callback handle_line(line, state) :: {:send, line, state} | {:ok, guid, state} | {:error, reason}`
 
-2. `lib/ex_dbus/auth/external.ex` — EXTERNAL auth:
+2. `lib/ex_d_bus/auth/external.ex` — EXTERNAL auth:
    - Sends uid as hex string
    - Handles OK/REJECTED responses
    - State machine: :init → :waiting_ok → :authenticated
 
-3. `lib/ex_dbus/transport/behaviour.ex`:
+3. `lib/ex_d_bus/transport/behaviour.ex`:
    - `@callback connect(address) :: {:ok, transport} | {:error, reason}`
    - `@callback send(transport, iodata) :: :ok | {:error, reason}`
    - `@callback recv(transport) :: {:ok, data} | {:error, reason}`
    - `@callback close(transport) :: :ok`
 
-4. `lib/ex_dbus/transport/unix_socket.ex`:
+4. `lib/ex_d_bus/transport/unix_socket.ex`:
    - Connect to AF_UNIX SOCK_STREAM
    - Support abstract and filesystem paths
    - Parse D-Bus address format: "unix:path=/var/run/dbus/system_bus_socket"
 
-5. `lib/ex_dbus/connection.ex` — GenServer:
+5. `lib/ex_d_bus/connection.ex` — GenServer:
    - Manages transport + auth lifecycle
    - States: :connecting → :authenticating → :connected
    - Assigns serial numbers to outgoing messages
@@ -134,7 +134,7 @@ Implement the bus daemon core:
 
 3. `lib/gao_bus/peer.ex`:
    - GenServer per connected client
-   - Handle auth handshake (delegate to ex_dbus auth)
+   - Handle auth handshake (delegate to ex_d_bus auth)
    - Receive messages from socket, decode, forward to Router
    - Receive messages from Router, encode, send to socket
    - Auto-assign unique connection name (:1.N)
@@ -157,7 +157,7 @@ Implement the bus daemon core:
    - GetNameOwner(name) → lookup
    - ListNames() → all registered names
 
-Integration test: start bus, connect two ex_dbus clients, send method_call from A to B, get response.
+Integration test: start bus, connect two ex_d_bus clients, send method_call from A to B, get response.
 ```
 
 ## Prompt 6: gao_bus_web — Phoenix LiveView Monitor
@@ -206,7 +206,7 @@ Read CLAUDE.md gao_config section.
 
 1. `lib/gao_config/application.ex`:
    - Start config store
-   - Connect to gao_bus as a client using ex_dbus
+   - Connect to gao_bus as a client using ex_d_bus
    - Register org.gaoos.Config1 well-known name
 
 2. `lib/gao_config/config_store.ex`:
@@ -224,7 +224,7 @@ Read CLAUDE.md gao_config section.
 4. Config provider behaviour for future extensibility:
    - Network, display, audio providers plug into the store
 
-Test: start gao_bus + gao_config, use ex_dbus client to call Config1.Set(), verify Config1.Get() returns it.
+Test: start gao_bus + gao_config, use ex_d_bus client to call Config1.Set(), verify Config1.Get() returns it.
 ```
 
 ## Usage

@@ -37,7 +37,7 @@ defmodule GaoBus.IntegrationTest do
         owner: self()
       )
 
-    assert_receive {:ex_dbus, {:connected, _guid}}, 5_000
+    assert_receive {:ex_d_bus, {:connected, _guid}}, 5_000
     conn
   end
 
@@ -334,10 +334,10 @@ defmodule GaoBus.IntegrationTest do
     deadline = System.monotonic_time(:millisecond) + timeout
 
     receive do
-      {:ex_dbus, {:message, %Message{type: :method_call} = msg}} ->
+      {:ex_d_bus, {:message, %Message{type: :method_call} = msg}} ->
         msg
 
-      {:ex_dbus, {:message, %Message{type: :signal}}} ->
+      {:ex_d_bus, {:message, %Message{type: :signal}}} ->
         remaining = max(0, deadline - System.monotonic_time(:millisecond))
         receive_method_call(remaining)
     after

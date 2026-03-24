@@ -2,7 +2,7 @@
 
 D-Bus service that registers `org.gaoos.Config1` on the bus and provides
 system configuration management for GaoOS. Connects to `gao_bus` as a
-standard D-Bus client using `ex_dbus`.
+standard D-Bus client using `ex_d_bus`.
 
 Configuration data is stored in ETS with disk persistence, organized into
 sections and key-value pairs.

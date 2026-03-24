@@ -14,14 +14,14 @@ Umbrella app with strict acyclic dependency constraint.
 
 ## Rationale
 - Single developer, tightly coupled iteration — protocol changes need immediate bus testing
-- ex_dbus maintains zero umbrella deps (extractable to standalone repo at any point)
+- ex_d_bus maintains zero umbrella deps (extractable to standalone repo at any point)
 - Single devenv.nix, single CI pipeline
 - Integration tests can depend on all apps naturally
 
 ## Constraints
-- ex_dbus MUST have zero umbrella deps — enforced by CI
-- Dependency direction must remain acyclic: ex_dbus → gao_bus → gao_config → gao_bus_web → gao_bus_test
-- When ex_dbus API stabilizes, extract to separate repo and switch to hex dependency
+- ex_d_bus MUST have zero umbrella deps — enforced by CI
+- Dependency direction must remain acyclic: ex_d_bus → gao_bus → gao_config → gao_bus_web → gao_bus_test
+- When ex_d_bus API stabilizes, extract to separate repo and switch to hex dependency
 
 ## Alternatives Rejected
 - **Separate repos**: PR ping-pong and version coordination overhead for no benefit during active development

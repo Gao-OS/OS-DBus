@@ -3,7 +3,7 @@ defmodule GaoBusTest.EndToEndTest do
   End-to-end integration tests.
 
   Starts gao_bus, connects gao_config's BusClient through it,
-  then uses a separate ex_dbus client to call Config1 methods
+  then uses a separate ex_d_bus client to call Config1 methods
   through the bus — exercising the full message path.
   """
   use ExUnit.Case
@@ -41,7 +41,7 @@ defmodule GaoBusTest.EndToEndTest do
       )
 
     receive do
-      {:ex_dbus, {:connected, _guid}} -> :ok
+      {:ex_d_bus, {:connected, _guid}} -> :ok
     after
       2_000 -> raise "test client connection timeout"
     end

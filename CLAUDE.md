@@ -11,7 +11,7 @@ The core thesis: replace `dbus-daemon` (C, single process, no supervision) with 
 ```
 gao_dbus/
 ├── apps/
-│   ├── ex_dbus/          ← D-Bus protocol library (client + server, hex-publishable)
+│   ├── ex_d_bus/          ← D-Bus protocol library (client + server, hex-publishable)
 │   ├── gao_bus/          ← Bus daemon application (replaces dbus-daemon)
 │   ├── gao_config/       ← org.gaoos.Config1 system config service
 │   ├── gao_bus_web/      ← Phoenix LiveView monitor/debugger
@@ -21,27 +21,27 @@ gao_dbus/
 ### Dependency Graph (MUST remain acyclic)
 
 ```
-ex_dbus          ← ZERO umbrella deps, standalone hex package
+ex_d_bus          ← ZERO umbrella deps, standalone hex package
     ↑
-gao_bus          ← depends on ex_dbus
+gao_bus          ← depends on ex_d_bus
     ↑
-gao_config       ← depends on ex_dbus (connects to gao_bus as client)
+gao_config       ← depends on ex_d_bus (connects to gao_bus as client)
     ↑
-gao_bus_web      ← depends on ex_dbus + gao_bus + phoenix
+gao_bus_web      ← depends on ex_d_bus + gao_bus + phoenix
     ↑
 gao_bus_test     ← depends on all apps
 ```
 
-**CRITICAL**: `ex_dbus` MUST have zero umbrella dependencies. It must compile and work standalone. This enables future extraction to its own repo and publishing to Hex.
+**CRITICAL**: `ex_d_bus` MUST have zero umbrella dependencies. It must compile and work standalone. This enables future extraction to its own repo and publishing to Hex.
 
 ## Architecture Overview
 
-### ex_dbus — D-Bus Protocol Library
+### ex_d_bus — D-Bus Protocol Library
 
 Pure Elixir implementation of the D-Bus wire protocol (no C dependencies, no NIFs).
 
 ```
-ex_dbus/lib/ex_dbus/
+ex_d_bus/lib/ex_d_bus/
 ├── wire/
 │   ├── encoder.ex        — Elixir terms → D-Bus binary (little/big endian)
 │   ├── decoder.ex        — D-Bus binary → Elixir terms
@@ -257,9 +257,9 @@ Client → Server:  BEGIN
 
 ### Common Mistakes to Avoid
 
-❌ NEVER store bus state in ex_dbus — it's a stateless protocol library
+❌ NEVER store bus state in ex_d_bus — it's a stateless protocol library
 ❌ NEVER block Peer GenServer on synchronous socket writes
-❌ NEVER add umbrella deps to ex_dbus/mix.exs
+❌ NEVER add umbrella deps to ex_d_bus/mix.exs
 ❌ NEVER use string concatenation for binary protocol work
 ✅ ALWAYS use binary pattern matching for decode
 ✅ ALWAYS use iolist for encode
@@ -284,4 +284,4 @@ Client → Server:  BEGIN
 | `full` | gao_bus + gao_config + gao_bus_web | Development |
 | `headless` | gao_bus + gao_config | Production NervesOS |
 | `monitor` | gao_bus_web (remote connect) | Remote debugging |
-| `library` | ex_dbus only | Third-party package |
+| `library` | ex_d_bus only | Third-party package |

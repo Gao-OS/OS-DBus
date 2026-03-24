@@ -6,7 +6,7 @@ defmodule ExDbus.MixProject do
 
   def project do
     [
-      app: :ex_dbus,
+      app: :ex_d_bus,
       version: @version,
       build_path: "../../_build",
       config_path: "../../config/config.exs",

@@ -48,7 +48,7 @@ defmodule GaoBusTest.E2ETestService do
       )
 
     receive do
-      {:ex_dbus, {:connected, _guid}} -> :ok
+      {:ex_d_bus, {:connected, _guid}} -> :ok
     after
       10_000 -> {:stop, :connection_timeout}
     end
@@ -80,14 +80,14 @@ defmodule GaoBusTest.E2ETestService do
   end
 
   @impl true
-  def handle_info({:ex_dbus, {:message, msg}}, state) do
+  def handle_info({:ex_d_bus, {:message, msg}}, state) do
     case msg.type do
       :method_call -> handle_method_call(msg, state)
       _ -> {:noreply, state}
     end
   end
 
-  def handle_info({:ex_dbus, _}, state), do: {:noreply, state}
+  def handle_info({:ex_d_bus, _}, state), do: {:noreply, state}
   def handle_info(_, state), do: {:noreply, state}
 
   defp handle_method_call(msg, state) do

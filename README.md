@@ -4,8 +4,8 @@
 [![Test](https://github.com/Gao-OS/OS-DBus/actions/workflows/test.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/test.yml)
 [![E2E](https://github.com/Gao-OS/OS-DBus/actions/workflows/e2e.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/e2e.yml)
 [![Release](https://github.com/Gao-OS/OS-DBus/actions/workflows/release.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/release.yml)
-[![Hex.pm](https://img.shields.io/hexpm/v/ex_dbus.svg)](https://hex.pm/packages/ex_dbus)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_dbus)
+[![Hex.pm](https://img.shields.io/hexpm/v/ex_d_bus.svg)](https://hex.pm/packages/ex_d_bus)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_d_bus)
 
 A BEAM-native D-Bus implementation for GaoOS — replacing `dbus-daemon` with a supervised, capability-aware Elixir bus.
 
@@ -13,7 +13,7 @@ A BEAM-native D-Bus implementation for GaoOS — replacing `dbus-daemon` with a 
 
 gao_dbus is an Elixir umbrella project providing a complete D-Bus ecosystem:
 
-- **ex_dbus** — Pure Elixir D-Bus protocol library (client + server)
+- **ex_d_bus** — Pure Elixir D-Bus protocol library (client + server)
 - **gao_bus** — Bus daemon that replaces `dbus-daemon` with OTP supervision
 - **gao_config** — System configuration service (`org.gaoos.Config1`)
 - **gao_bus_web** — Phoenix LiveView real-time D-Bus monitor/debugger
@@ -55,7 +55,7 @@ mix phx.server
 ## Architecture
 
 ```
-ex_dbus (zero deps, hex-publishable)
+ex_d_bus (zero deps, hex-publishable)
     ↑
 gao_bus (bus daemon)
     ↑

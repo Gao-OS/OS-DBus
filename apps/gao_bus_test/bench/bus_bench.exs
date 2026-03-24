@@ -18,7 +18,7 @@ defmodule BusBench.Helpers do
       )
 
     receive do
-      {:ex_dbus, {:connected, _guid}} -> :ok
+      {:ex_d_bus, {:connected, _guid}} -> :ok
     after
       2_000 -> raise "connection timeout"
     end

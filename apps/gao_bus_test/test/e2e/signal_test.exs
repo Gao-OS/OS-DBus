@@ -132,7 +132,7 @@ defmodule GaoBusTest.E2E.SignalTest do
     # Wait for signal message (sent to this process as owner)
     received =
       receive do
-        {:ex_dbus, {:message, %{type: :signal, member: "TestSignal"} = msg}} ->
+        {:ex_d_bus, {:message, %{type: :signal, member: "TestSignal"} = msg}} ->
           msg
       after
         5_000 -> nil
@@ -198,7 +198,7 @@ defmodule GaoBusTest.E2E.SignalTest do
     # We should receive the matched signal
     received =
       receive do
-        {:ex_dbus, {:message, %{type: :signal, member: "TestSignal"} = msg}} ->
+        {:ex_d_bus, {:message, %{type: :signal, member: "TestSignal"} = msg}} ->
           msg
       after
         5_000 -> nil
@@ -207,7 +207,7 @@ defmodule GaoBusTest.E2E.SignalTest do
     # Drain mailbox — verify no unmatched signals arrived
     unmatched =
       receive do
-        {:ex_dbus, {:message, %{type: :signal, member: "UnrelatedSignal"}}} -> true
+        {:ex_d_bus, {:message, %{type: :signal, member: "UnrelatedSignal"}}} -> true
       after
         200 -> false
       end
@@ -228,7 +228,7 @@ defmodule GaoBusTest.E2E.SignalTest do
       )
 
     receive do
-      {:ex_dbus, {:connected, _}} -> :ok
+      {:ex_d_bus, {:connected, _}} -> :ok
     after
       5_000 -> raise "signal connection timeout"
     end

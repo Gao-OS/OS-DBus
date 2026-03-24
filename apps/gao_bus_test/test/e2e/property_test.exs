@@ -136,7 +136,7 @@ defmodule GaoBusTest.E2E.PropertyTest do
       )
 
     receive do
-      {:ex_dbus, {:connected, _}} -> :ok
+      {:ex_d_bus, {:connected, _}} -> :ok
     after
       5_000 -> raise "timeout"
     end
@@ -178,7 +178,7 @@ defmodule GaoBusTest.E2E.PropertyTest do
     # Should NOT receive PropertiesChanged
     received =
       receive do
-        {:ex_dbus, {:message, %{type: :signal, member: "PropertiesChanged"}}} ->
+        {:ex_d_bus, {:message, %{type: :signal, member: "PropertiesChanged"}}} ->
           true
       after
         1_000 -> false

@@ -32,7 +32,7 @@ The D-Bus interface becomes the common API surface that all GaoOS variants share
 
 ## Design Philosophy
 
-1. **Protocol purity in ex_dbus** — the library implements D-Bus wire protocol with zero opinions about bus architecture. Anyone can use it for any D-Bus client/server need.
+1. **Protocol purity in ex_d_bus** — the library implements D-Bus wire protocol with zero opinions about bus architecture. Anyone can use it for any D-Bus client/server need.
 
 2. **Bus opinions in gao_bus** — the daemon makes opinionated choices about supervision, routing, and security. These are GaoOS-specific.
 

@@ -17,7 +17,7 @@ Pure Elixir implementation.
 - Hot code upgrades work — NIFs block this for protocol changes
 - No segfault risk from NIF bugs
 - D-Bus wire format is straightforward (aligned fields, type signatures) — not compute-intensive enough to justify NIF overhead
-- Keeps ex_dbus dependency-free and hex-publishable without native compilation
+- Keeps ex_d_bus dependency-free and hex-publishable without native compilation
 
 ## Trade-offs
 - **Pro**: Zero native dependencies, portable, hot-upgradable, debuggable

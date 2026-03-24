@@ -378,7 +378,7 @@ defmodule ExDBus.Connection do
   end
 
   defp notify_owner(%{owner: owner}, event) when is_pid(owner) do
-    send(owner, {:ex_dbus, event})
+    send(owner, {:ex_d_bus, event})
   end
 
   defp notify_owner(_, _), do: :ok

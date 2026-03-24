@@ -87,7 +87,7 @@ defmodule GaoBusTest.E2E.ErrorPathTest do
       )
 
     receive do
-      {:ex_dbus, {:connected, _}} -> :ok
+      {:ex_d_bus, {:connected, _}} -> :ok
     after
       5_000 -> raise "timeout"
     end
@@ -134,7 +134,7 @@ defmodule GaoBusTest.E2E.ErrorPathTest do
       )
 
     receive do
-      {:ex_dbus, {:connected, _}} -> :ok
+      {:ex_d_bus, {:connected, _}} -> :ok
     after
       5_000 -> raise "timeout"
     end
@@ -154,9 +154,9 @@ defmodule GaoBusTest.E2E.ErrorPathTest do
     # Should receive disconnect notification or connection should error
     received_disconnect =
       receive do
-        {:ex_dbus, :disconnected} -> true
-        {:ex_dbus, {:disconnected}} -> true
-        {:ex_dbus, {:connection_error, _}} -> true
+        {:ex_d_bus, :disconnected} -> true
+        {:ex_d_bus, {:disconnected}} -> true
+        {:ex_d_bus, {:connection_error, _}} -> true
         {:DOWN, _, :process, ^conn, _} -> true
       after
         5_000 -> false

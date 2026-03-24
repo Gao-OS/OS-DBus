@@ -141,7 +141,7 @@ defmodule GaoBusTest.E2EHarness do
       )
 
     receive do
-      {:ex_dbus, {:connected, _guid}} -> :ok
+      {:ex_d_bus, {:connected, _guid}} -> :ok
     after
       @startup_timeout -> raise "Elixir connection to test bus timed out"
     end

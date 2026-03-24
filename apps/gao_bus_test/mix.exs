@@ -29,7 +29,7 @@ defmodule GaoBusTest.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_dbus, in_umbrella: true},
+      {:ex_d_bus, in_umbrella: true},
       {:gao_bus, in_umbrella: true},
       {:gao_config, in_umbrella: true},
       {:gao_bus_web, in_umbrella: true},

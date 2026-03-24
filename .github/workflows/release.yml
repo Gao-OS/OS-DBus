@@ -66,32 +66,32 @@ jobs:
           # Umbrella root mix.exs
           sed -i 's/version: "[^"]*"/version: "${{ inputs.version }}"/' mix.exs
 
-          # ex_dbus app (hex-published package)
-          sed -i 's/@version "[^"]*"/@version "${{ inputs.version }}"/' apps/ex_dbus/mix.exs
+          # ex_d_bus app (hex-published package)
+          sed -i 's/@version "[^"]*"/@version "${{ inputs.version }}"/' apps/ex_d_bus/mix.exs
 
       - name: Verify version was updated
         run: |
           grep -q 'version: "${{ inputs.version }}"' mix.exs || { echo "::error::Root mix.exs version not updated"; exit 1; }
-          grep -q '@version "${{ inputs.version }}"' apps/ex_dbus/mix.exs || { echo "::error::ex_dbus mix.exs version not updated"; exit 1; }
+          grep -q '@version "${{ inputs.version }}"' apps/ex_d_bus/mix.exs || { echo "::error::ex_d_bus mix.exs version not updated"; exit 1; }
 
       - name: Commit version bump
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add mix.exs apps/ex_dbus/mix.exs
+          git add mix.exs apps/ex_d_bus/mix.exs
           git commit -m "chore: bump version to ${{ inputs.version }}"
 
       # --- Build ---
       - name: Compile
         run: mix compile
 
-      - name: Build ex_dbus hex package
+      - name: Build ex_d_bus hex package
         run: |
-          cd apps/ex_dbus
+          cd apps/ex_d_bus
           mix hex.build
 
-      # --- Publish ex_dbus to Hex ---
-      - name: Publish ex_dbus to Hex
+      # --- Publish ex_d_bus to Hex ---
+      - name: Publish ex_d_bus to Hex
         if: ${{ !inputs.dry_run }}
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
@@ -100,7 +100,7 @@ jobs:
             echo "::notice::HEX_API_KEY secret not set — skipping Hex publish"
             exit 0
           fi
-          cd apps/ex_dbus
+          cd apps/ex_d_bus
           mix hex.publish --yes --no-docs
 
       # --- Tag + push ---
@@ -121,9 +121,9 @@ jobs:
           {
             echo "notes<<RELEASE_NOTES_EOF"
 
-            echo "## ex_dbus v${{ inputs.version }}"
+            echo "## ex_d_bus v${{ inputs.version }}"
             echo ""
-            echo "[![Hex.pm](https://img.shields.io/hexpm/v/ex_dbus.svg)](https://hex.pm/packages/ex_dbus)"
+            echo "[![Hex.pm](https://img.shields.io/hexpm/v/ex_d_bus.svg)](https://hex.pm/packages/ex_d_bus)"
             echo ""
 
             if [ -n "$PREV_TAG" ]; then
@@ -140,7 +140,7 @@ jobs:
             echo ""
             echo '```elixir'
             echo "def deps do"
-            echo '  [{:ex_dbus, "~> ${{ inputs.version }}"}]'
+            echo '  [{:ex_d_bus, "~> ${{ inputs.version }}"}]'
             echo "end"
             echo '```'
 
@@ -162,7 +162,7 @@ jobs:
           echo "::notice::Dry run complete. Would have released v${{ inputs.version }}"
           echo "Version bump applied to:"
           grep 'version:' mix.exs
-          grep '@version' apps/ex_dbus/mix.exs
+          grep '@version' apps/ex_d_bus/mix.exs
           echo ""
           echo "Hex package built:"
-          ls -la apps/ex_dbus/ex_dbus-*.tar 2>/dev/null || echo "(no tarball found)"
+          ls -la apps/ex_d_bus/ex_d_bus-*.tar 2>/dev/null || echo "(no tarball found)"

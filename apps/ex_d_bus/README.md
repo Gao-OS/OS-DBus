@@ -1,7 +1,7 @@
 # ExDBus
 
-[![Hex.pm](https://img.shields.io/hexpm/v/ex_dbus.svg)](https://hex.pm/packages/ex_dbus)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_dbus)
+[![Hex.pm](https://img.shields.io/hexpm/v/ex_d_bus.svg)](https://hex.pm/packages/ex_d_bus)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_d_bus)
 [![CI](https://github.com/Gao-OS/OS-DBus/actions/workflows/ci.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/ci.yml)
 
 Pure Elixir D-Bus wire protocol implementation with no C dependencies or NIFs.
@@ -21,12 +21,12 @@ authentication, and transport — suitable for both client and server use cases.
 
 ## Installation
 
-Add `ex_dbus` to your dependencies in `mix.exs`:
+Add `ex_d_bus` to your dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:ex_dbus, "~> 0.1.0"}
+    {:ex_d_bus, "~> 0.1.0"}
   ]
 end
 ```
@@ -43,7 +43,7 @@ end
 
 # Wait for connection
 receive do
-  {:ex_dbus, {:connected, _guid}} -> :ok
+  {:ex_d_bus, {:connected, _guid}} -> :ok
 end
 
 # Call a method

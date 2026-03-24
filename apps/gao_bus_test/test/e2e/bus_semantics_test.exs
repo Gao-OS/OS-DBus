@@ -139,7 +139,7 @@ defmodule GaoBusTest.E2E.BusSemanticsTest do
       )
 
     receive do
-      {:ex_dbus, {:connected, _}} -> :ok
+      {:ex_d_bus, {:connected, _}} -> :ok
     after
       5_000 -> raise "timeout"
     end
@@ -164,7 +164,7 @@ defmodule GaoBusTest.E2E.BusSemanticsTest do
     # Should receive NameOwnerChanged
     received =
       receive do
-        {:ex_dbus, {:message, %{type: :signal, member: "NameOwnerChanged"} = msg}} ->
+        {:ex_d_bus, {:message, %{type: :signal, member: "NameOwnerChanged"} = msg}} ->
           msg
       after
         3_000 -> nil

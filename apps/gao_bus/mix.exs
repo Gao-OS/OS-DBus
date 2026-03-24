@@ -26,7 +26,7 @@ defmodule GaoBus.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_dbus, in_umbrella: true},
+      {:ex_d_bus, in_umbrella: true},
       {:phoenix_pubsub, "~> 2.1"}
     ]
   end

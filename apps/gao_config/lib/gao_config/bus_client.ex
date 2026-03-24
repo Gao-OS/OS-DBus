@@ -54,7 +54,7 @@ defmodule GaoConfig.BusClient do
     end
   end
 
-  def handle_info({:ex_dbus, {:connected, _guid}}, state) do
+  def handle_info({:ex_d_bus, {:connected, _guid}}, state) do
     Logger.debug("GaoConfig.BusClient: connected to bus")
     # Call Hello
     bus = Proxy.new(state.connection, "org.freedesktop.DBus", "/org/freedesktop/DBus")
@@ -87,7 +87,7 @@ defmodule GaoConfig.BusClient do
     end
   end
 
-  def handle_info({:ex_dbus, {:message, %Message{type: :method_call} = msg}}, state) do
+  def handle_info({:ex_d_bus, {:message, %Message{type: :method_call} = msg}}, state) do
     # Dispatch to DBusInterface via Object behaviour
     result = ExDBus.Object.dispatch(msg, GaoConfig.DBusInterface)
 
@@ -102,18 +102,18 @@ defmodule GaoConfig.BusClient do
     {:noreply, state}
   end
 
-  def handle_info({:ex_dbus, {:message, %Message{type: :signal}}}, state) do
+  def handle_info({:ex_d_bus, {:message, %Message{type: :signal}}}, state) do
     # Ignore signals for now
     {:noreply, state}
   end
 
-  def handle_info({:ex_dbus, :disconnected}, state) do
+  def handle_info({:ex_d_bus, :disconnected}, state) do
     Logger.warning("GaoConfig.BusClient: disconnected from bus, reconnecting...")
     Process.send_after(self(), {:connect, state.address}, 1_000)
     {:noreply, %{state | connection: nil, unique_name: nil}}
   end
 
-  def handle_info({:ex_dbus, {:connection_error, reason}}, state) do
+  def handle_info({:ex_d_bus, {:connection_error, reason}}, state) do
     Logger.warning("GaoConfig.BusClient: connection error: #{inspect(reason)}")
     Process.send_after(self(), {:connect, state.address}, 1_000)
     {:noreply, %{state | connection: nil, unique_name: nil}}

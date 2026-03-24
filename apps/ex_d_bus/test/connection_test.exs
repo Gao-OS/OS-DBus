@@ -125,7 +125,7 @@ defmodule ExDBus.ConnectionTest do
       assert begin_data =~ "BEGIN"
 
       # Should receive connected notification
-      assert_receive {:ex_dbus, {:connected, "test_guid_123"}}, 5_000
+      assert_receive {:ex_d_bus, {:connected, "test_guid_123"}}, 5_000
 
       # State should be :connected
       assert Connection.get_state(conn) == :connected
@@ -161,7 +161,7 @@ defmodule ExDBus.ConnectionTest do
           owner: self()
         )
 
-      assert_receive {:ex_dbus, {:connected, _}}, 5_000
+      assert_receive {:ex_d_bus, {:connected, _}}, 5_000
       assert Connection.get_state(conn) == :connected
 
       Connection.disconnect(conn)
@@ -242,7 +242,7 @@ defmodule ExDBus.ConnectionTest do
           owner: self()
         )
 
-      assert_receive {:ex_dbus, {:connected, _}}, 5_000
+      assert_receive {:ex_d_bus, {:connected, _}}, 5_000
 
       msg =
         Message.method_call("/test", "org.test.Iface", "Hello", signature: "s", body: ["hello"])
@@ -290,7 +290,7 @@ defmodule ExDBus.ConnectionTest do
           owner: self()
         )
 
-      assert_receive {:ex_dbus, {:connected, _}}, 5_000
+      assert_receive {:ex_d_bus, {:connected, _}}, 5_000
 
       signal = Message.signal("/org/test", "org.test.Iface", "SomethingHappened")
       Connection.cast(conn, signal)
@@ -341,10 +341,10 @@ defmodule ExDBus.ConnectionTest do
           owner: self()
         )
 
-      assert_receive {:ex_dbus, {:connected, _}}, 5_000
+      assert_receive {:ex_d_bus, {:connected, _}}, 5_000
 
       # Should receive the signal from the server
-      assert_receive {:ex_dbus, {:message, signal}}, 5_000
+      assert_receive {:ex_d_bus, {:message, signal}}, 5_000
       assert signal.type == :signal
       assert signal.interface == "org.freedesktop.DBus"
       assert signal.member == "NameAcquired"
@@ -387,7 +387,7 @@ defmodule ExDBus.ConnectionTest do
           owner: self()
         )
 
-      assert_receive {:ex_dbus, {:connected, _}}, 5_000
+      assert_receive {:ex_d_bus, {:connected, _}}, 5_000
 
       s1 = Message.signal("/a", "org.a", "A")
       s2 = Message.signal("/b", "org.b", "B")
