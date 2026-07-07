@@ -159,7 +159,6 @@ defmodule GaoBusTest.E2E.SmokeConformanceTest do
     gate: :release,
     group: :methods,
     backends: @backends,
-    known_gap: [:gao_bus],
     actors: [:busctl, :elixir_service]
   }
   @tag Map.to_list(@e2e_006)

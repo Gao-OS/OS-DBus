@@ -14,7 +14,6 @@ defmodule GaoBusTest.E2E.IntrospectionConformanceTest do
     gate: :compat,
     group: :introspection,
     backends: @backends,
-    known_gap: [:gao_bus],
     actors: [:busctl, :elixir_service]
   }
   @tag Map.to_list(@e2e_012)
