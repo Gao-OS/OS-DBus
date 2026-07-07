@@ -60,33 +60,16 @@ defmodule GaoBusTest.E2E.ScenarioCase do
   def skip_reason(tags) when is_map(tags) do
     validate_known_gap!(tags)
 
-    cond do
-      gate_skipped?(Map.fetch!(tags, :gate)) ->
-        "E2E_GATE=#{System.get_env("E2E_GATE", "all")} excludes #{Map.fetch!(tags, :gate)}"
-
-      selected_backend_names(tags) == [] ->
-        "E2E_BACKEND=#{System.get_env("E2E_BACKEND", "reference")} excludes #{inspect(Map.fetch!(tags, :backends))}"
-
-      runnable_backend_names(tags) == [] ->
-        known_gap_skip_reason(tags)
-
-      Enum.all?(runnable_backend_names(tags), &backend_unavailable?/1) ->
-        runnable_backend_names(tags)
-        |> Enum.map(&backend_unavailable_reason/1)
-        |> Enum.join("; ")
-
-      requires_fixture?(tags) and not GaoBusTest.E2E.Actor.GLibFixture.available?() ->
-        GaoBusTest.E2E.Actor.GLibFixture.missing_reason()
-
-      requires_busctl?(tags) and not GaoBusTest.E2E.Actor.Busctl.available?() ->
-        GaoBusTest.E2E.Actor.Busctl.missing_reason()
-
-      requires_gdbus?(tags) and not GaoBusTest.E2E.Actor.GDBus.available?() ->
-        GaoBusTest.E2E.Actor.GDBus.missing_reason()
-
-      true ->
-        nil
-    end
+    [
+      &gate_skip_reason/1,
+      &backend_selection_skip_reason/1,
+      &known_gap_selection_skip_reason/1,
+      &backend_availability_skip_reason/1,
+      &fixture_skip_reason/1,
+      &busctl_skip_reason/1,
+      &gdbus_skip_reason/1
+    ]
+    |> Enum.find_value(fn reason_fun -> reason_fun.(tags) end)
   end
 
   def run_scenario(tags, fun) when is_map(tags) and is_function(fun, 1) do
@@ -133,6 +116,52 @@ defmodule GaoBusTest.E2E.ScenarioCase do
 
   defp gate_skipped?(gate) do
     selected_gate() != :all and gate_rank(gate) > gate_rank(selected_gate())
+  end
+
+  defp gate_skip_reason(tags) do
+    gate = Map.fetch!(tags, :gate)
+
+    if gate_skipped?(gate) do
+      "E2E_GATE=#{System.get_env("E2E_GATE", "all")} excludes #{gate}"
+    end
+  end
+
+  defp backend_selection_skip_reason(tags) do
+    if selected_backend_names(tags) == [] do
+      "E2E_BACKEND=#{System.get_env("E2E_BACKEND", "reference")} excludes #{inspect(Map.fetch!(tags, :backends))}"
+    end
+  end
+
+  defp known_gap_selection_skip_reason(tags) do
+    if runnable_backend_names(tags) == [] do
+      known_gap_skip_reason(tags)
+    end
+  end
+
+  defp backend_availability_skip_reason(tags) do
+    runnable_backends = runnable_backend_names(tags)
+
+    if Enum.all?(runnable_backends, &backend_unavailable?/1) do
+      Enum.map_join(runnable_backends, "; ", &backend_unavailable_reason/1)
+    end
+  end
+
+  defp fixture_skip_reason(tags) do
+    if requires_fixture?(tags) and not GaoBusTest.E2E.Actor.GLibFixture.available?() do
+      GaoBusTest.E2E.Actor.GLibFixture.missing_reason()
+    end
+  end
+
+  defp busctl_skip_reason(tags) do
+    if requires_busctl?(tags) and not GaoBusTest.E2E.Actor.Busctl.available?() do
+      GaoBusTest.E2E.Actor.Busctl.missing_reason()
+    end
+  end
+
+  defp gdbus_skip_reason(tags) do
+    if requires_gdbus?(tags) and not GaoBusTest.E2E.Actor.GDBus.available?() do
+      GaoBusTest.E2E.Actor.GDBus.missing_reason()
+    end
   end
 
   defp gate_rank(:smoke), do: 1

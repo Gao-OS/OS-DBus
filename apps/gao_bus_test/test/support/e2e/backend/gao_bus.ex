@@ -123,25 +123,27 @@ defmodule GaoBusTest.E2E.Backend.GaoBus do
     tmpdir = Path.join(base, "gb#{System.unique_integer([:positive])}")
     socket_path = Path.join(tmpdir, "s")
 
-    with :ok <- File.mkdir_p(tmpdir) do
-      {previous_socket_path_set?, previous_socket_path} =
-        case Application.fetch_env(:gao_bus, :socket_path) do
-          {:ok, value} -> {true, value}
-          :error -> {false, nil}
-        end
+    case File.mkdir_p(tmpdir) do
+      :ok ->
+        {previous_socket_path_set?, previous_socket_path} =
+          case Application.fetch_env(:gao_bus, :socket_path) do
+            {:ok, value} -> {true, value}
+            :error -> {false, nil}
+          end
 
-      {:ok,
-       %__MODULE__{
-         tmpdir: tmpdir,
-         socket_path: socket_path,
-         bus_address: "unix:path=#{socket_path}",
-         previous_socket_path: previous_socket_path,
-         previous_socket_path_set?: previous_socket_path_set?,
-         was_running?: app_running?(),
-         restored?: false
-       }}
-    else
-      {:error, reason} -> {:error, {:tmpdir_create_failed, reason}}
+        {:ok,
+         %__MODULE__{
+           tmpdir: tmpdir,
+           socket_path: socket_path,
+           bus_address: "unix:path=#{socket_path}",
+           previous_socket_path: previous_socket_path,
+           previous_socket_path_set?: previous_socket_path_set?,
+           was_running?: app_running?(),
+           restored?: false
+         }}
+
+      {:error, reason} ->
+        {:error, {:tmpdir_create_failed, reason}}
     end
   end
 

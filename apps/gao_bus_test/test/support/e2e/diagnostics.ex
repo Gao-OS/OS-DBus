@@ -13,7 +13,7 @@ defmodule GaoBusTest.E2E.Diagnostics do
 
     File.write!(Path.join(dir, "context.json"), encode(context_payload(context, reason)))
     File.write!(Path.join(dir, "backend.log"), backend_log(context))
-    File.write!(Path.join(dir, "fixture.log"), fixture_log(context))
+    File.write!(Path.join(dir, "fixture.log"), fixture_log(context, reason))
     File.write!(Path.join(dir, "commands.jsonl"), commands_jsonl(context))
 
     {:ok, dir}
@@ -64,6 +64,33 @@ defmodule GaoBusTest.E2E.Diagnostics do
     |> to_string()
   end
 
+  defp fixture_log(%Context{} = context, reason) do
+    case fixture_log(context) do
+      "" -> fixture_log_from_failure(reason)
+      log -> log
+    end
+  end
+
+  defp fixture_log_from_failure(%MatchError{term: {:error, {_reason, log}, context_or_other}})
+       when is_binary(log) do
+    case context_or_other do
+      %Context{} = context ->
+        case fixture_log(context) do
+          "" -> log
+          context_log -> context_log
+        end
+
+      _ ->
+        log
+    end
+  end
+
+  defp fixture_log_from_failure(%MatchError{term: {:error, _reason, %Context{} = context}}) do
+    fixture_log(context)
+  end
+
+  defp fixture_log_from_failure(_reason), do: ""
+
   defp commands_jsonl(%Context{commands: commands}) do
     commands
     |> Enum.reverse()
@@ -79,15 +106,13 @@ defmodule GaoBusTest.E2E.Diagnostics do
 
   defp json(value) when is_map(value) do
     value
-    |> Enum.map(fn {key, val} -> json(to_string(key)) <> ":" <> json(val) end)
-    |> Enum.join(",")
+    |> Enum.map_join(",", fn {key, val} -> json(to_string(key)) <> ":" <> json(val) end)
     |> then(&("{" <> &1 <> "}"))
   end
 
   defp json(value) when is_list(value) do
     value
-    |> Enum.map(&json/1)
-    |> Enum.join(",")
+    |> Enum.map_join(",", &json/1)
     |> then(&("[" <> &1 <> "]"))
   end
 

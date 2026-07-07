@@ -47,6 +47,7 @@ defmodule GaoBusTest.E2E.Actor.GLibFixture do
 
         {:error, reason, log} ->
           stop_port(port, nil)
+          context = put_failed_actor(context, reason, log)
           {:error, {reason, log}, context}
       end
     else
@@ -79,6 +80,18 @@ defmodule GaoBusTest.E2E.Actor.GLibFixture do
     after
       @startup_timeout -> {:error, :fixture_ready_timeout, acc}
     end
+  end
+
+  defp put_failed_actor(%Context{} = context, reason, log) do
+    actor = %{
+      port: nil,
+      pid: nil,
+      log: log,
+      binary: @fixture_binary,
+      start_error: reason
+    }
+
+    Context.put_actor(context, :glib_fixture, actor)
   end
 
   defp stop_port(nil, _), do: :ok
