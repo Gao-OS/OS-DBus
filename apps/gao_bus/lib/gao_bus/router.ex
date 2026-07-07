@@ -32,7 +32,26 @@ defmodule GaoBus.Router do
   """
   @spec emit_signal(String.t(), String.t(), String.t(), String.t() | nil, list()) :: :ok
   def emit_signal(path, interface, member, signature, body) do
-    GenServer.cast(__MODULE__, {:emit_signal, path, interface, member, signature, body})
+    emit_signal(path, interface, member, signature, body, nil)
+  end
+
+  @doc """
+  Emit a signal from the bus itself to a specific destination.
+  """
+  @spec emit_signal(
+          String.t(),
+          String.t(),
+          String.t(),
+          String.t() | nil,
+          list(),
+          String.t() | nil
+        ) ::
+          :ok
+  def emit_signal(path, interface, member, signature, body, destination) do
+    GenServer.cast(
+      __MODULE__,
+      {:emit_signal, path, interface, member, signature, body, destination}
+    )
   end
 
   @doc """
@@ -52,7 +71,11 @@ defmodule GaoBus.Router do
   """
   @spec unregister_peer(pid()) :: :ok
   def unregister_peer(peer_pid) do
-    GenServer.cast(__MODULE__, {:unregister_peer, peer_pid})
+    if Process.whereis(__MODULE__) do
+      GenServer.call(__MODULE__, {:unregister_peer, peer_pid})
+    else
+      :ok
+    end
   end
 
   # --- GenServer callbacks ---
@@ -94,7 +117,7 @@ defmodule GaoBus.Router do
     end
   end
 
-  def handle_cast({:emit_signal, path, interface, member, signature, body}, state) do
+  def handle_cast({:emit_signal, path, interface, member, signature, body, destination}, state) do
     {serial, state} = next_serial(state)
 
     signal = %Message{
@@ -104,11 +127,12 @@ defmodule GaoBus.Router do
       interface: interface,
       member: member,
       sender: "org.freedesktop.DBus",
+      destination: destination,
       signature: signature,
       body: body
     }
 
-    broadcast_signal(signal, state)
+    deliver_signal(signal, state)
     {:noreply, state}
   end
 
@@ -124,7 +148,12 @@ defmodule GaoBus.Router do
     {:noreply, put_in(state.peers[peer_pid], peer_info)}
   end
 
-  def handle_cast({:unregister_peer, peer_pid}, state) do
+  @impl true
+  def handle_call({:unregister_peer, peer_pid}, _from, state) do
+    {:reply, :ok, remove_peer(state, peer_pid)}
+  end
+
+  defp remove_peer(state, peer_pid) do
     case Map.get(state.peers, peer_pid) do
       %{monitor_ref: ref} ->
         Process.demonitor(ref, [:flush])
@@ -133,13 +162,12 @@ defmodule GaoBus.Router do
         :ok
     end
 
-    {:noreply, %{state | peers: Map.delete(state.peers, peer_pid)}}
+    %{state | peers: Map.delete(state.peers, peer_pid)}
   end
 
   @impl true
-  def handle_info({:DOWN, ref, :process, peer_pid, _reason}, state) do
-    Process.demonitor(ref, [:flush])
-    {:noreply, %{state | peers: Map.delete(state.peers, peer_pid)}}
+  def handle_info({:DOWN, _ref, :process, peer_pid, _reason}, state) do
+    {:noreply, remove_peer(state, peer_pid)}
   end
 
   def handle_info(_msg, state) do
@@ -190,6 +218,12 @@ defmodule GaoBus.Router do
     state
   end
 
+  defp do_route(%Message{type: :signal, destination: dest} = msg, _from_peer_pid, state)
+       when is_binary(dest) do
+    deliver_signal(msg, state)
+    state
+  end
+
   defp do_route(%Message{type: :signal} = msg, _from_peer_pid, state) do
     broadcast_signal(msg, state)
     state
@@ -210,6 +244,20 @@ defmodule GaoBus.Router do
         send(pid, {:send_message, signal})
       end
     end
+  end
+
+  defp deliver_signal(%Message{destination: dest} = signal, state) when is_binary(dest) do
+    case GaoBus.NameRegistry.resolve(dest) do
+      {:ok, target_pid} when is_map_key(state.peers, target_pid) ->
+        send(target_pid, {:send_message, signal})
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp deliver_signal(signal, state) do
+    broadcast_signal(signal, state)
   end
 
   defp check_policy(message, from_peer_pid, state) do

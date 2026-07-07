@@ -328,6 +328,28 @@ defmodule GaoBus.NameRegistry do
 
     # Send through the router if available
     if Process.whereis(GaoBus.Router) do
+      if old_owner != "" do
+        GaoBus.Router.emit_signal(
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus",
+          "NameLost",
+          "s",
+          [name],
+          old_owner
+        )
+      end
+
+      if new_owner != "" do
+        GaoBus.Router.emit_signal(
+          "/org/freedesktop/DBus",
+          "org.freedesktop.DBus",
+          "NameAcquired",
+          "s",
+          [name],
+          new_owner
+        )
+      end
+
       GaoBus.Router.emit_signal(
         "/org/freedesktop/DBus",
         "org.freedesktop.DBus",

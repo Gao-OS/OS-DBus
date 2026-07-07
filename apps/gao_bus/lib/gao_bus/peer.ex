@@ -23,6 +23,8 @@ defmodule GaoBus.Peer do
   require Logger
 
   @auth_guid Application.compile_env(:gao_bus, :auth_guid, nil)
+  @supported_auth_mechanisms "EXTERNAL ANONYMOUS"
+  @rejected_auth_line "REJECTED #{@supported_auth_mechanisms}\r\n"
 
   # Control buffer size for recvmsg — enough for a few FDs
   # Each FD is 4 bytes, plus cmsg header (~16 bytes)
@@ -35,6 +37,7 @@ defmodule GaoBus.Peer do
     state: :waiting_socket,
     buffer: <<>>,
     auth_buffer: <<>>,
+    auth_pending: nil,
     fd_passing: false,
     cleaned_up: false
   ]
@@ -225,12 +228,50 @@ defmodule GaoBus.Peer do
     end
   end
 
-  defp handle_auth_line("AUTH " <> rest, state) do
-    # Extract credentials from auth mechanism
-    state = extract_credentials(rest, state)
-    # Accept any auth mechanism for now — respond with OK
+  defp handle_auth_line("AUTH", state) do
+    do_send(state.socket, @rejected_auth_line)
+    wait_for_begin(%{state | auth_pending: nil})
+  end
+
+  defp handle_auth_line("AUTH EXTERNAL " <> initial_response, state) do
+    state = extract_credentials("EXTERNAL " <> initial_response, state)
     do_send(state.socket, "OK #{auth_guid()}\r\n")
-    wait_for_begin(state)
+    wait_for_begin(%{state | auth_pending: nil})
+  end
+
+  defp handle_auth_line("AUTH EXTERNAL", state) do
+    do_send(state.socket, "DATA\r\n")
+    wait_for_begin(%{state | auth_pending: :external})
+  end
+
+  defp handle_auth_line("AUTH ANONYMOUS", state) do
+    accept_anonymous_auth(state)
+  end
+
+  defp handle_auth_line("AUTH ANONYMOUS " <> _trace, state) do
+    accept_anonymous_auth(state)
+  end
+
+  defp accept_anonymous_auth(state) do
+    state = extract_credentials("ANONYMOUS", state)
+    do_send(state.socket, "OK #{auth_guid()}\r\n")
+    wait_for_begin(%{state | auth_pending: nil})
+  end
+
+  defp handle_auth_line("AUTH " <> _unsupported, state) do
+    do_send(state.socket, @rejected_auth_line)
+    wait_for_begin(%{state | auth_pending: nil})
+  end
+
+  defp handle_auth_line("DATA " <> initial_response, %{auth_pending: :external} = state) do
+    state = extract_credentials("EXTERNAL " <> initial_response, state)
+    do_send(state.socket, "OK #{auth_guid()}\r\n")
+    wait_for_begin(%{state | auth_pending: nil})
+  end
+
+  defp handle_auth_line("CANCEL", state) do
+    do_send(state.socket, @rejected_auth_line)
+    wait_for_begin(%{state | auth_pending: nil})
   end
 
   defp handle_auth_line("BEGIN", state) do
@@ -422,14 +463,14 @@ defmodule GaoBus.Peer do
   defp cleanup(state) do
     if state.unique_name do
       GaoBus.PubSub.broadcast({:peer_disconnected, state.unique_name, self()})
-      GaoBus.NameRegistry.peer_disconnected(self())
+      GaoBus.Router.unregister_peer(self())
       GaoBus.MatchRules.peer_disconnected(self())
 
       if Process.whereis(Capability) do
         Capability.peer_disconnected(state.unique_name)
       end
 
-      GaoBus.Router.unregister_peer(self())
+      GaoBus.NameRegistry.peer_disconnected(self())
     end
 
     :socket.close(state.socket)
