@@ -258,9 +258,11 @@ defmodule GaoBus.Peer do
   end
 
   defp handle_auth_line("DATA " <> initial_response, %{auth_pending: :external} = state) do
-    state = extract_credentials("EXTERNAL " <> initial_response, state)
-    do_send(state.socket, "OK #{auth_guid()}\r\n")
-    wait_for_begin(%{state | auth_pending: nil})
+    accept_external_data(state, initial_response)
+  end
+
+  defp handle_auth_line("DATA", %{auth_pending: :external} = state) do
+    accept_external_data(state, "")
   end
 
   defp handle_auth_line("CANCEL", state) do
@@ -292,6 +294,18 @@ defmodule GaoBus.Peer do
 
   defp accept_anonymous_auth(state) do
     state = extract_credentials("ANONYMOUS", state)
+    do_send(state.socket, "OK #{auth_guid()}\r\n")
+    wait_for_begin(%{state | auth_pending: nil})
+  end
+
+  defp accept_external_data(state, "") do
+    state = extract_peer_credentials(state)
+    do_send(state.socket, "OK #{auth_guid()}\r\n")
+    wait_for_begin(%{state | auth_pending: nil})
+  end
+
+  defp accept_external_data(state, initial_response) do
+    state = extract_credentials("EXTERNAL " <> initial_response, state)
     do_send(state.socket, "OK #{auth_guid()}\r\n")
     wait_for_begin(%{state | auth_pending: nil})
   end
@@ -456,6 +470,23 @@ defmodule GaoBus.Peer do
     end
   rescue
     _ -> :error
+  end
+
+  defp extract_peer_credentials(state) do
+    case :socket.getopt(state.socket, {:socket, :peercred}) do
+      {:ok, %{uid: uid}} when is_integer(uid) -> %{state | credentials: %{uid: uid}}
+      {:ok, peercred} when is_map(peercred) -> put_peer_uid(state, peercred)
+      _ -> state
+    end
+  rescue
+    _ -> state
+  end
+
+  defp put_peer_uid(state, peercred) do
+    case Map.fetch(peercred, :uid) do
+      {:ok, uid} when is_integer(uid) -> %{state | credentials: %{uid: uid}}
+      _ -> state
+    end
   end
 
   defp cleanup(%{cleaned_up: true} = _state), do: :ok

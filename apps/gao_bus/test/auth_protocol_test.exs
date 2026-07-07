@@ -1,6 +1,8 @@
 defmodule GaoBus.AuthProtocolTest do
   use ExUnit.Case, async: false
 
+  alias ExDBus.Message
+
   @rejected "REJECTED EXTERNAL ANONYMOUS\r\n"
 
   setup do
@@ -72,6 +74,22 @@ defmodule GaoBus.AuthProtocolTest do
       :socket.close(sock)
     end
 
+    test "AUTH EXTERNAL accepts bare DATA response and enters message protocol", %{
+      socket_path: path
+    } do
+      sock = connect(path)
+
+      assert send_auth_line(sock, "AUTH") == @rejected
+      assert send_line(sock, "AUTH EXTERNAL") == "DATA\r\n"
+      assert send_line(sock, "DATA") |> String.starts_with?("OK ")
+
+      :ok = :socket.sendmsg(sock, %{iov: ["BEGIN\r\n"]})
+
+      assert <<":1.", _rest::binary>> = do_hello(sock)
+
+      :socket.close(sock)
+    end
+
     test "unknown auth command returns ERROR", %{socket_path: path} do
       sock = connect(path)
 
@@ -100,6 +118,23 @@ defmodule GaoBus.AuthProtocolTest do
   defp recv(sock) do
     {:ok, msg} = :socket.recvmsg(sock, 0, 0, [], 5_000)
     IO.iodata_to_binary(msg.iov)
+  end
+
+  defp do_hello(sock) do
+    hello =
+      Message.method_call("/org/freedesktop/DBus", "org.freedesktop.DBus", "Hello",
+        serial: 1,
+        destination: "org.freedesktop.DBus"
+      )
+
+    :ok = :socket.sendmsg(sock, %{iov: [Message.encode_message(hello)]})
+
+    {:ok, reply_msg} = :socket.recvmsg(sock, 0, 0, [], 5_000)
+    reply_data = IO.iodata_to_binary(reply_msg.iov)
+    {:ok, reply, _rest} = Message.decode_message(reply_data)
+
+    assert %{type: :method_return, body: [name]} = reply
+    name
   end
 
   defp current_uid_hex do
