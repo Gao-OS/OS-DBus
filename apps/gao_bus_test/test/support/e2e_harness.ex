@@ -1,26 +1,15 @@
 defmodule GaoBusTest.E2EHarness do
   @moduledoc """
-  E2E test harness managing dbus-daemon and fixture service lifecycles.
-
-  Each test group gets an isolated dbus-daemon instance with a private socket.
-  The fixture service (C/GLib) is started per-group when E→X tests need it.
-  An Elixir service is started per-group when X→E tests need it.
+  Compatibility wrapper for the backend-agnostic E2E conformance harness.
   """
 
-  require Logger
+  alias GaoBusTest.E2E.Actor.{Busctl, GDBus, GLibFixture}
+  alias GaoBusTest.E2E.Backend.ReferenceDBusDaemon
+  alias GaoBusTest.E2E.Command
+  alias GaoBusTest.E2E.Context
 
-  @fixture_binary Path.expand(Path.join([__DIR__, "..", "fixture", "external_fixture"]))
   @tool_timeout 5_000
   @startup_timeout 10_000
-
-  # C fixture service identity constants
-  @fixture_bus_name "com.test.ExternalFixture"
-  @fixture_object_path "/com/test/ExternalFixture"
-  @fixture_interface "com.test.ExternalFixture"
-
-  def fixture_bus_name, do: @fixture_bus_name
-  def fixture_object_path, do: @fixture_object_path
-  def fixture_interface, do: @fixture_interface
 
   defstruct [
     :tmpdir,
@@ -30,104 +19,64 @@ defmodule GaoBusTest.E2EHarness do
     :daemon_pid,
     :fixture_port,
     :fixture_pid,
-    :elixir_conn
+    :elixir_conn,
+    :backend_state
   ]
+
+  def fixture_bus_name, do: GLibFixture.bus_name()
+  def fixture_object_path, do: GLibFixture.object_path()
+  def fixture_interface, do: GLibFixture.interface()
 
   @doc "Check if required external tools are available."
   def tools_available? do
-    System.find_executable("dbus-daemon") != nil and
-      System.find_executable("busctl") != nil and
-      System.find_executable("gdbus") != nil
+    required_tools_skip_reason() == nil
+  end
+
+  def required_tools_skip_reason do
+    missing =
+      ["dbus-daemon", "busctl", "gdbus"]
+      |> Enum.filter(&(System.find_executable(&1) == nil))
+
+    case missing do
+      [] -> nil
+      tools -> "required external tools not found: #{Enum.join(tools, ", ")}"
+    end
   end
 
   @doc "Check if the C fixture binary exists (needs `make -C test/fixture`)."
-  def fixture_available? do
-    File.exists?(@fixture_binary)
-  end
+  def fixture_available?, do: GLibFixture.available?()
 
   @doc "Start an isolated dbus-daemon session bus."
   def start_bus do
-    tmpdir = Path.join(System.tmp_dir!(), "e2e_dbus_#{System.unique_integer([:positive])}")
-    File.mkdir_p!(tmpdir)
+    case ReferenceDBusDaemon.start() do
+      {:ok, backend_state} ->
+        {:ok, from_backend(backend_state)}
 
-    socket_path = Path.join(tmpdir, "bus.sock")
-    config_path = Path.join(tmpdir, "session.conf")
-
-    config_xml = """
-    <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
-     "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
-    <busconfig>
-      <type>custom</type>
-      <listen>unix:path=#{socket_path}</listen>
-      <auth>EXTERNAL</auth>
-      <allow_anonymous/>
-      <policy context="default">
-        <allow send_destination="*" eavesdrop="true"/>
-        <allow eavesdrop="true"/>
-        <allow own="*"/>
-        <allow send_type="method_call"/>
-        <allow send_type="signal"/>
-        <allow send_interface="org.freedesktop.DBus.Monitoring"/>
-      </policy>
-    </busconfig>
-    """
-
-    File.write!(config_path, config_xml)
-
-    dbus_daemon =
-      System.find_executable("dbus-daemon") ||
-        raise "dbus-daemon not found on PATH"
-
-    port =
-      Port.open(
-        {:spawn_executable, dbus_daemon},
-        [
-          :binary,
-          :stderr_to_stdout,
-          :exit_status,
-          args: ["--config-file=#{config_path}", "--nofork", "--print-address"]
-        ]
-      )
-
-    bus_address = wait_for_bus_address(port)
-
-    {:os_pid, daemon_pid} = Port.info(port, :os_pid)
-
-    state = %__MODULE__{
-      tmpdir: tmpdir,
-      socket_path: socket_path,
-      bus_address: bus_address,
-      daemon_port: port,
-      daemon_pid: daemon_pid
-    }
-
-    {:ok, state}
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc "Start the C fixture service on the given bus."
   def start_fixture(%__MODULE__{bus_address: addr} = state) do
     unless fixture_available?() do
-      raise "Fixture binary not found at #{@fixture_binary}. Run: make -C apps/gao_bus_test/test/fixture"
+      raise GLibFixture.missing_reason()
     end
 
     port =
       Port.open(
-        {:spawn_executable, @fixture_binary},
+        {:spawn_executable, GLibFixture.fixture_binary()},
         [
           :binary,
           :stderr_to_stdout,
           :exit_status,
           args: ["--bus-address=#{addr}"],
-          env: [
-            {~c"DBUS_SESSION_BUS_ADDRESS", String.to_charlist(addr)}
-          ]
+          env: [{~c"DBUS_SESSION_BUS_ADDRESS", String.to_charlist(addr)}]
         ]
       )
 
     wait_for_ready(port)
-
     {:os_pid, fixture_pid} = Port.info(port, :os_pid)
-
     {:ok, %{state | fixture_port: port, fixture_pid: fixture_pid}}
   end
 
@@ -146,7 +95,6 @@ defmodule GaoBusTest.E2EHarness do
       @startup_timeout -> raise "Elixir connection to test bus timed out"
     end
 
-    # Say Hello to get a unique name
     hello =
       ExDBus.Message.method_call(
         "/org/freedesktop/DBus",
@@ -161,28 +109,17 @@ defmodule GaoBusTest.E2EHarness do
   end
 
   @doc "Run busctl against the test bus."
-  def busctl(%__MODULE__{bus_address: addr}, args, _opts \\ []) do
-    System.cmd(
-      System.find_executable("busctl"),
-      args,
-      stderr_to_stdout: true,
-      env: [
-        {"DBUS_SESSION_BUS_ADDRESS", addr},
-        {"DBUS_SYSTEM_BUS_ADDRESS", addr}
-      ]
-    )
+  def busctl(%__MODULE__{} = state, args, opts \\ []) do
+    context = context_from_state(state)
+    {result, _context} = Busctl.run(context, args, opts)
+    {result.stdout <> result.stderr, result.exit_status || 1}
   end
 
   @doc "Run gdbus against the test bus."
-  def gdbus(%__MODULE__{bus_address: addr}, args, _opts \\ []) do
-    System.cmd(
-      System.find_executable("gdbus"),
-      args ++ ["--address=#{addr}"],
-      stderr_to_stdout: true,
-      env: [
-        {"DBUS_SESSION_BUS_ADDRESS", addr}
-      ]
-    )
+  def gdbus(%__MODULE__{} = state, args, opts \\ []) do
+    context = context_from_state(state)
+    {result, _context} = GDBus.run(context, args, opts)
+    {result.stdout <> result.stderr, result.exit_status || 1}
   rescue
     e -> {"gdbus error: #{Exception.message(e)}", 1}
   end
@@ -201,7 +138,7 @@ defmodule GaoBusTest.E2EHarness do
     )
   end
 
-  @doc "Run dbus-monitor as a background port, returns port."
+  @doc "Run busctl monitor as a background port, returns port."
   def busctl_monitor(%__MODULE__{bus_address: addr}, match_args \\ []) do
     busctl_path =
       System.find_executable("busctl") ||
@@ -213,12 +150,13 @@ defmodule GaoBusTest.E2EHarness do
         :binary,
         :stderr_to_stdout,
         args: ["--address=#{addr}", "monitor"] ++ match_args,
-        env: [
-          {~c"DBUS_SESSION_BUS_ADDRESS", String.to_charlist(addr)}
-        ]
+        env: [{~c"DBUS_SESSION_BUS_ADDRESS", String.to_charlist(addr)}]
       ]
     )
   end
+
+  @doc "Run any command through the conformance command runner."
+  def command(command, args, opts \\ []), do: Command.run(command, args, opts)
 
   @doc "Tear down everything."
   def cleanup(%__MODULE__{} = state) do
@@ -231,28 +169,53 @@ defmodule GaoBusTest.E2EHarness do
     end
 
     kill_port(state.fixture_port, state.fixture_pid)
-    kill_port(state.daemon_port, state.daemon_pid)
 
-    if state.tmpdir, do: File.rm_rf!(state.tmpdir)
+    if state.backend_state do
+      ReferenceDBusDaemon.stop(state.backend_state)
+    else
+      kill_port(state.daemon_port, state.daemon_pid)
+      if state.tmpdir, do: File.rm_rf(state.tmpdir)
+    end
 
     :ok
   end
 
-  # --- Private ---
+  def cleanup(%{__struct__: _} = state), do: cleanup(Map.from_struct(state))
 
-  defp wait_for_bus_address(port) do
-    receive do
-      {^port, {:data, data}} ->
-        case String.trim(data) do
-          "unix:" <> _ = addr -> addr
-          _ -> wait_for_bus_address(port)
-        end
+  def cleanup(state) when is_map(state) do
+    state
+    |> struct(__MODULE__)
+    |> cleanup()
+  end
 
-      {^port, {:exit_status, code}} ->
-        raise "dbus-daemon exited with code #{code}"
-    after
-      @startup_timeout -> raise "dbus-daemon did not print address"
-    end
+  defp from_backend(%ReferenceDBusDaemon{} = backend_state) do
+    %__MODULE__{
+      tmpdir: backend_state.tmpdir,
+      socket_path: backend_state.socket_path,
+      bus_address: backend_state.bus_address,
+      daemon_port: backend_state.daemon_port,
+      daemon_pid: backend_state.daemon_pid,
+      backend_state: backend_state
+    }
+  end
+
+  defp context_from_state(%__MODULE__{} = state) do
+    backend_state =
+      state.backend_state ||
+        %ReferenceDBusDaemon{
+          tmpdir: state.tmpdir,
+          socket_path: state.socket_path,
+          bus_address: state.bus_address,
+          daemon_port: state.daemon_port,
+          daemon_pid: state.daemon_pid
+        }
+
+    Context.new(
+      scenario_id: "legacy",
+      backend_name: :reference,
+      backend_mod: ReferenceDBusDaemon,
+      backend_state: backend_state
+    )
   end
 
   defp wait_for_ready(port) do
@@ -277,7 +240,6 @@ defmodule GaoBusTest.E2EHarness do
     if os_pid do
       System.cmd("kill", ["-TERM", "#{os_pid}"], stderr_to_stdout: true)
       Process.sleep(100)
-      # Force kill if still alive
       System.cmd("kill", ["-9", "#{os_pid}"], stderr_to_stdout: true)
     end
 

@@ -7,6 +7,18 @@ on:
         description: 'Release version to test (e.g. 0.2.0) — checks out v{version} tag'
         required: false
         type: string
+      gate:
+        description: 'E2E gate to run'
+        required: false
+        type: choice
+        options:
+          - smoke
+          - release
+          - compat
+          - stress
+          - all
+  schedule:
+    - cron: '0 3 * * *'
   pull_request:
     branches: [ main ]
 
@@ -18,9 +30,15 @@ permissions:
   contents: read
 
 jobs:
-  e2e:
-    name: E2E Tests${{ inputs.version && format(' (v{0})', inputs.version) || '' }}
+  conformance:
+    name: e2e (${{ matrix.backend }}, ${{ matrix.gate }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [reference, gao_bus]
+        gate: ${{ fromJSON(github.event_name == 'schedule' && '["compat"]' || github.event_name == 'workflow_dispatch' && inputs.gate != '' && format('["{0}"]', inputs.gate) || '["smoke","release"]') }}
 
     env:
       MIX_ENV: test
@@ -58,5 +76,15 @@ jobs:
         run: make -C apps/gao_bus_test/test/fixture
 
       - name: Run E2E tests
-        run: mix test --only e2e
+        run: E2E_KEEP_ARTIFACTS=1 E2E_BACKEND=${{ matrix.backend }} E2E_GATE=${{ matrix.gate }} mix test --only e2e
         working-directory: apps/gao_bus_test
+
+      - name: Upload E2E artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts-${{ matrix.backend }}-${{ matrix.gate }}
+          path: |
+            _build/test/e2e_artifacts
+            apps/gao_bus_test/_build/test/e2e_artifacts
+          if-no-files-found: ignore

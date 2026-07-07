@@ -10,6 +10,9 @@ config :gao_bus_web, GaoBusWebWeb.Endpoint,
 # Print only warnings and errors during test
 config :logger, level: :warning
 
+# Keep test-env GaoBus boot away from the default development socket.
+config :gao_bus, :socket_path, Path.join(System.tmp_dir!(), "gb_test_boot")
+
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
 
