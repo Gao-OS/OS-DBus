@@ -42,6 +42,7 @@ jobs:
 
     env:
       MIX_ENV: test
+      G_DBUS_DEBUG: authentication,message
 
     steps:
       - name: Checkout code
