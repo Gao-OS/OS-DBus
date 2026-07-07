@@ -72,6 +72,10 @@ defmodule GaoBusTest.E2E.Actor.ExDBusClient do
     call_bus(conn, "NameHasOwner", signature: "s", body: [name])
   end
 
+  def get_name_owner(conn, name) do
+    call_bus(conn, "GetNameOwner", signature: "s", body: [name])
+  end
+
   def add_match(conn, rule) do
     call_bus(conn, "AddMatch", signature: "s", body: [rule])
   end
@@ -104,6 +108,24 @@ defmodule GaoBusTest.E2E.Actor.ExDBusClient do
     end
   end
 
+  def await_signal_matching(interface, member, predicate, timeout \\ 2_000)
+      when is_function(predicate, 1) do
+    deadline = System.monotonic_time(:millisecond) + timeout
+    await_signal_matching_until(interface, member, predicate, deadline)
+  end
+
+  def abrupt_disconnect(conn) when is_pid(conn) do
+    ref = Process.monitor(conn)
+    Process.unlink(conn)
+    Process.exit(conn, :kill)
+
+    receive do
+      {:DOWN, ^ref, :process, ^conn, _reason} -> :ok
+    after
+      2_000 -> {:error, :disconnect_timeout}
+    end
+  end
+
   def disconnect(conn) do
     Connection.disconnect(conn)
   catch
@@ -132,6 +154,24 @@ defmodule GaoBusTest.E2E.Actor.ExDBusClient do
 
       {:ex_d_bus, {:message, %{type: :signal}}} ->
         await_signal_until(interface, member, body, deadline)
+    after
+      remaining -> {:error, :timeout}
+    end
+  end
+
+  defp await_signal_matching_until(interface, member, predicate, deadline) do
+    remaining = max(deadline - System.monotonic_time(:millisecond), 0)
+
+    receive do
+      {:ex_d_bus, {:message, %{type: :signal, interface: ^interface, member: ^member} = msg}} ->
+        if predicate.(msg) do
+          {:ok, msg}
+        else
+          await_signal_matching_until(interface, member, predicate, deadline)
+        end
+
+      {:ex_d_bus, {:message, %{type: :signal}}} ->
+        await_signal_matching_until(interface, member, predicate, deadline)
     after
       remaining -> {:error, :timeout}
     end

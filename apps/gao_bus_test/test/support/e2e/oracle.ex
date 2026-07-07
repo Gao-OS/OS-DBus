@@ -112,6 +112,12 @@ defmodule GaoBusTest.E2E.Oracle do
     |> String.replace("\\'", "'")
   end
 
+  defp parse_gdbus_scalar("<" <> text) do
+    text
+    |> String.trim_trailing(">")
+    |> parse_gdbus_scalar()
+  end
+
   defp parse_gdbus_scalar(text) do
     case Integer.parse(text) do
       {integer, ""} -> integer

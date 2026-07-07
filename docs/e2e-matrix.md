@@ -14,11 +14,11 @@
 | E2E-010 | signals | release | AddMatch receives matching signal | ExDBus, GLib-fixture | reference, gao_bus verified (2026-07-07) — inherited E2E-005 auth/name-signal gaps fixed, including Linux bare-DATA EXTERNAL flow | signal received |
 | E2E-011 | signals | release | unmatched signal is not delivered | ExDBus, GLib-fixture | reference, gao_bus verified (2026-07-07) — inherited E2E-005 auth/name-signal gaps fixed, including Linux bare-DATA EXTERNAL flow | no signal |
 | E2E-012 | introspection | compat | busctl introspects Elixir service | busctl, Elixir-service | reference, gao_bus — busctl verified in Linux CI | XML contains interface |
-| E2E-013 | properties | compat | gdbus Get property from GLib fixture | gdbus, GLib-fixture | reference, gao_bus known_gap | CurrentValue returned |
-| E2E-014 | properties | compat | gdbus Set property on GLib fixture | gdbus, GLib-fixture | reference, gao_bus known_gap | value changed |
-| E2E-015 | concurrency | stress | concurrent calls demux correctly | ExDBus, GLib-fixture | reference, gao_bus known_gap | all replies match serial |
-| E2E-016 | failure | release | service disconnect cleans owned name | ExDBus, GLib-fixture | reference, gao_bus known_gap | NameOwnerChanged emitted |
-| E2E-017 | failure | release | client disconnect does not crash bus | ExDBus | reference, gao_bus known_gap | bus remains responsive |
-| E2E-018 | routing | release | method call to missing destination returns error | ExDBus | reference, gao_bus known_gap | ServiceUnknown |
-| E2E-019 | bus | release | GetNameOwner works after RequestName | ExDBus | reference, gao_bus known_gap | owner unique name |
-| E2E-020 | bus | release | NameHasOwner reflects ownership | ExDBus | reference, gao_bus known_gap | true/false transitions |
+| E2E-013 | properties | compat | gdbus Get property from GLib fixture | gdbus, GLib-fixture | reference, gao_bus implemented — verification pending host/CI | CurrentValue returned |
+| E2E-014 | properties | compat | gdbus Set property on GLib fixture | gdbus, GLib-fixture | reference, gao_bus implemented — verification pending host/CI | value changed |
+| E2E-015 | concurrency | stress | concurrent calls demux correctly | ExDBus, GLib-fixture | reference, gao_bus implemented — verification pending host/CI | all replies match serial |
+| E2E-016 | failure | release | service disconnect cleans owned name | ExDBus, GLib-fixture | reference, gao_bus implemented — verification pending host/CI | NameOwnerChanged emitted |
+| E2E-017 | failure | release | client disconnect does not crash bus | ExDBus | reference, gao_bus implemented — verification pending host/CI | bus remains responsive |
+| E2E-018 | routing | release | method call to missing destination returns error | ExDBus | reference, gao_bus implemented — verification pending host/CI | ServiceUnknown |
+| E2E-019 | bus | release | GetNameOwner works after RequestName | ExDBus | reference, gao_bus implemented — verification pending host/CI | owner unique name |
+| E2E-020 | bus | release | NameHasOwner reflects ownership | ExDBus | reference, gao_bus implemented — verification pending host/CI | true/false transitions |
