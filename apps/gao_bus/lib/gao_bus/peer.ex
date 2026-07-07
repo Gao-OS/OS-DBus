@@ -252,12 +252,6 @@ defmodule GaoBus.Peer do
     accept_anonymous_auth(state)
   end
 
-  defp accept_anonymous_auth(state) do
-    state = extract_credentials("ANONYMOUS", state)
-    do_send(state.socket, "OK #{auth_guid()}\r\n")
-    wait_for_begin(%{state | auth_pending: nil})
-  end
-
   defp handle_auth_line("AUTH " <> _unsupported, state) do
     do_send(state.socket, @rejected_auth_line)
     wait_for_begin(%{state | auth_pending: nil})
@@ -294,6 +288,12 @@ defmodule GaoBus.Peer do
     Logger.debug("GaoBus.Peer: unknown auth line: #{inspect(line)}")
     do_send(state.socket, "ERROR\r\n")
     wait_for_begin(state)
+  end
+
+  defp accept_anonymous_auth(state) do
+    state = extract_credentials("ANONYMOUS", state)
+    do_send(state.socket, "OK #{auth_guid()}\r\n")
+    wait_for_begin(%{state | auth_pending: nil})
   end
 
   defp wait_for_begin(state) do

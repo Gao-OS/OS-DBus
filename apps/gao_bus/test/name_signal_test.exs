@@ -103,12 +103,10 @@ defmodule GaoBus.NameSignalTest do
   defp assert_peer_signal(expected) do
     assert_receive {:peer, {:send_message, %Message{} = msg}}, 500
 
-    cond do
-      signal_matches?(msg, expected) ->
-        assert msg.destination == expected.destination
-
-      true ->
-        assert_peer_signal(expected)
+    if signal_matches?(msg, expected) do
+      assert msg.destination == expected.destination
+    else
+      assert_peer_signal(expected)
     end
   end
 
