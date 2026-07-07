@@ -10,6 +10,7 @@ defmodule GaoBusTest.E2E.BusSemanticsTest do
   @moduletag :e2e
   @moduletag group: :bus_semantics
   @moduletag timeout: 120_000
+  if reason = E2EHarness.required_tools_skip_reason(), do: @moduletag(skip: reason)
 
   @bus_name "com.test.NameTest"
 

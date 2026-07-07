@@ -12,6 +12,7 @@ defmodule GaoBusTest.E2E.MethodCallTest do
   @moduletag :e2e
   @moduletag group: :methods
   @moduletag timeout: 120_000
+  if reason = E2EHarness.required_tools_skip_reason(), do: @moduletag(skip: reason)
 
   setup_all do
     unless E2EHarness.tools_available?() do
