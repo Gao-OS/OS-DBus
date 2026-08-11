@@ -1,15 +1,15 @@
-# CLAUDE.md — gao_dbus
+# CLAUDE.md — gao_bus
 
 ## Project Context
 
-**gao_dbus** is an Elixir umbrella project that implements the D-Bus protocol and a BEAM-native bus daemon. It is part of the GaoOS ecosystem — an umbrella OS project with variants including StrataOS, NixOS, LineageOS, RockNix, and NervesOS branches.
+**gao_bus** is an Elixir umbrella project that implements the D-Bus protocol and a BEAM-native bus daemon. It is part of the GaoOS ecosystem — an umbrella OS project with variants including StrataOS, NixOS, LineageOS, RockNix, and NervesOS branches.
 
 The core thesis: replace `dbus-daemon` (C, single process, no supervision) with a BEAM-based bus where every D-Bus message is an Erlang message, every connected peer is a supervised GenServer, and security policy is capability-based Elixir code instead of XML files.
 
 ## Umbrella Apps
 
 ```
-gao_dbus/
+gao_bus/
 ├── apps/
 │   ├── ex_d_bus/          ← D-Bus protocol library (client + server, hex-publishable)
 │   ├── gao_bus/          ← Bus daemon application (replaces dbus-daemon)

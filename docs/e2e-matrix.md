@@ -1,4 +1,4 @@
-# OS-DBus E2E Matrix
+# OS-Bus E2E Matrix
 
 | ID | Group | Gate | Scenario | Actors | Backends | Expected |
 | --- | --- | --- | --- | --- | --- | --- |

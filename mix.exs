@@ -1,4 +1,4 @@
-defmodule GaoDbus.MixProject do
+defmodule GaoBus.Umbrella.MixProject do
   use Mix.Project
 
   def project do
@@ -7,8 +7,8 @@ defmodule GaoDbus.MixProject do
       version: "0.2.1",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      name: "GaoDbus",
-      source_url: "https://github.com/Gao-OS/OS-DBus",
+      name: "GaoBus",
+      source_url: "https://github.com/Gao-OS/OS-Bus",
       docs: [
         main: "readme",
         extras: ["README.md"]

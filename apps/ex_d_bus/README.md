@@ -2,7 +2,7 @@
 
 [![Hex.pm](https://img.shields.io/hexpm/v/ex_d_bus.svg)](https://hex.pm/packages/ex_d_bus)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_d_bus)
-[![CI](https://github.com/Gao-OS/OS-DBus/actions/workflows/ci.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/ci.yml)
+[![CI](https://github.com/Gao-OS/OS-Bus/actions/workflows/ci.yml/badge.svg)](https://github.com/Gao-OS/OS-Bus/actions/workflows/ci.yml)
 
 Pure Elixir D-Bus wire protocol implementation with no C dependencies or NIFs.
 

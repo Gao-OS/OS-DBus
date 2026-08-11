@@ -2,7 +2,7 @@ defmodule ExDbus.MixProject do
   use Mix.Project
 
   @version "0.2.1"
-  @source_url "https://github.com/Gao-OS/OS-DBus"
+  @source_url "https://github.com/Gao-OS/OS-Bus"
 
   def project do
     [

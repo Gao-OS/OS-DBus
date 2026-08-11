@@ -1,9 +1,9 @@
-# gao_dbus
+# gao_bus
 
-[![CI](https://github.com/Gao-OS/OS-DBus/actions/workflows/ci.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/ci.yml)
-[![Test](https://github.com/Gao-OS/OS-DBus/actions/workflows/test.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/test.yml)
-[![E2E](https://github.com/Gao-OS/OS-DBus/actions/workflows/e2e.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/e2e.yml)
-[![Release](https://github.com/Gao-OS/OS-DBus/actions/workflows/release.yml/badge.svg)](https://github.com/Gao-OS/OS-DBus/actions/workflows/release.yml)
+[![CI](https://github.com/Gao-OS/OS-Bus/actions/workflows/ci.yml/badge.svg)](https://github.com/Gao-OS/OS-Bus/actions/workflows/ci.yml)
+[![Test](https://github.com/Gao-OS/OS-Bus/actions/workflows/test.yml/badge.svg)](https://github.com/Gao-OS/OS-Bus/actions/workflows/test.yml)
+[![E2E](https://github.com/Gao-OS/OS-Bus/actions/workflows/e2e.yml/badge.svg)](https://github.com/Gao-OS/OS-Bus/actions/workflows/e2e.yml)
+[![Release](https://github.com/Gao-OS/OS-Bus/actions/workflows/release.yml/badge.svg)](https://github.com/Gao-OS/OS-Bus/actions/workflows/release.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/ex_d_bus.svg)](https://hex.pm/packages/ex_d_bus)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_d_bus)
 
@@ -11,7 +11,7 @@ A BEAM-native D-Bus implementation for GaoOS — replacing `dbus-daemon` with a 
 
 ## Overview
 
-gao_dbus is an Elixir umbrella project providing a complete D-Bus ecosystem:
+gao_bus is an Elixir umbrella project providing a complete D-Bus ecosystem:
 
 - **ex_d_bus** — Pure Elixir D-Bus protocol library (client + server)
 - **gao_bus** — Bus daemon that replaces `dbus-daemon` with OTP supervision
@@ -35,8 +35,8 @@ Part of the [GaoOS](https://github.com/Gao-OS) ecosystem.
 
 ```bash
 # Clone
-git clone https://github.com/Gao-OS/gao_dbus.git
-cd gao_dbus
+git clone https://github.com/Gao-OS/OS-Bus.git
+cd OS-Bus
 
 # Setup (with devenv/nix)
 devenv shell

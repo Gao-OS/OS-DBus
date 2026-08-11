@@ -2,7 +2,7 @@
 
 ## What This Is
 
-gao_dbus replaces the Linux D-Bus system with a BEAM-native implementation. Instead of `dbus-daemon` (a C process that routes messages between Linux services), we run an Elixir OTP application that IS the message bus.
+gao_bus replaces the Linux D-Bus system with a BEAM-native implementation. Instead of `dbus-daemon` (a C process that routes messages between Linux services), we run an Elixir OTP application that IS the message bus.
 
 ## Why This Exists
 
@@ -22,7 +22,7 @@ By implementing the bus in Elixir/OTP:
 
 ## Where This Fits in GaoOS
 
-gao_dbus is shared infrastructure across GaoOS Linux branches:
+gao_bus is shared infrastructure across GaoOS Linux branches:
 
 - **NervesOS branch**: gao_bus runs as PID 1's bus, BEAM services are first-class
 - **StrataOS branch**: gao_bus replaces dbus-daemon under systemd

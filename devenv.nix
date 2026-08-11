@@ -80,7 +80,7 @@
   };
 
   enterShell = ''
-    echo "🚌 gao_dbus development environment"
+    echo "🚌 gao_bus development environment"
     echo "  mix test       — run all tests"
     echo "  bus-start      — start the bus daemon"
     echo "  mix phx.server — start web monitor"

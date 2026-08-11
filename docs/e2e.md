@@ -1,4 +1,4 @@
-# OS-DBus E2E Conformance Harness
+# OS-Bus E2E Conformance Harness
 
 ## Goals
 

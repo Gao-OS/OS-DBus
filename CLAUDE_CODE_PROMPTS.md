@@ -1,11 +1,11 @@
-# Claude Code Prompts — gao_dbus
+# Claude Code Prompts — gao_bus
 
 ## Prompt 1: Scaffold the Umbrella
 
 ```
-Read CLAUDE.md first. Then scaffold the gao_dbus Elixir umbrella project:
+Read CLAUDE.md first. Then scaffold the gao_bus Elixir umbrella project:
 
-1. Create the umbrella root with `mix new gao_dbus --umbrella`
+1. Create the umbrella root with `mix new gao_bus --umbrella`
 2. Create apps:
    - `cd apps && mix new ex_d_bus` (library, no supervision)
    - `cd apps && mix new gao_bus --sup` (OTP application)

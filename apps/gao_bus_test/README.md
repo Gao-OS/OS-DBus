@@ -1,6 +1,6 @@
 # GaoBusTest
 
-Integration, interop, and property-based test suite for the `gao_dbus` umbrella
+Integration, interop, and property-based test suite for the `gao_bus` umbrella
 project. This app has no runtime code -- it exists solely to test the full stack
 with all apps wired together.
 
